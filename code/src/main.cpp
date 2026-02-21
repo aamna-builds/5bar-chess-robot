@@ -1,6 +1,7 @@
 #include <raylib.h>
 #include "bar.h"
 #include "chess.h"
+#include "stockfish.h"
 #include "config.h"
 
 int main(void)
@@ -12,6 +13,8 @@ int main(void)
     );
     InitWindow(WIDTH, HEIGHT, "5-Bar Mechanism Simulation");
     SetTargetFPS(GetMonitorRefreshRate(GetCurrentMonitor()));
+
+    sf.start("../bin/stockfish-macos");
 
     while (!WindowShouldClose())
     {
@@ -27,6 +30,7 @@ int main(void)
         EndDrawing();
     }
 
+    sf.stop();
     CloseWindow();
     return 0;
 }

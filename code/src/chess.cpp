@@ -2,7 +2,21 @@
 #include <iostream>
 #include <vector>
 #include "chess.h"
+#include "stockfish.h"
 #include "config.h"
+
+struct Vector2i
+{
+    int x;
+    int y;
+};
+
+struct Move
+{
+    Vector2i from;
+    Vector2i to;
+    char promotion = 0;
+};
 
 int squareSize = 32;
 int fontSize = 20;
@@ -12,6 +26,7 @@ int offsetX = (WIDTH  - boardSize) / 2;
 int offsetY = (HEIGHT - boardSize) / 2;
 
 std::vector<Vector2> points;
+std::vector<std::string> moves;
 
 std::pair<char, bool> mat[8][8] =
 {
@@ -32,14 +47,14 @@ float EaseInOut(float t)
         : 1.0f - pow(-2.0f * t + 2.0f, 2.0f) / 2.0f;
 }
 
-std::vector<char> GenerateMove(std::string start, std::string end)
+std::vector<char> GenerateMove(Move m)
 {
     std::vector<char> dirs;
 
-    int sX = start[0] - '0';
-    int sY = start[1];
-    int eX = end[0] - '0';
-    int eY = end[1];
+    int sX = m.from.x;
+    int sY = m.from.y;
+    int eX = m.to.x;
+    int eY = m.to.y;
 
     while (sX != eX || sY != eY) {
         if (sY < eY) { dirs.push_back('U'); sY++; }
@@ -51,15 +66,14 @@ std::vector<char> GenerateMove(std::string start, std::string end)
     return dirs;
 }
 
-std::vector<Vector2> GetEdgePath(const std::vector<char>& dirs, std::string cPos, std::string endPos)
+std::vector<Vector2> GetEdgePath(const std::vector<char>& dirs, Move m)
 {
     std::vector<Vector2> vec;
 
-    int startCol = cPos[0] - 'a';
-    int startRow = 7 - (cPos[1] - '1');
-
-    int endCol = endPos[0] - 'a';
-    int endRow = 7 - (endPos[1] - '1');
+    int startCol = m.from.x;
+    int startRow = 7 - m.from.y;
+    int endCol = m.to.x;
+    int endRow = 7 - m.to.y;
 
     float startCX = offsetX + startCol * squareSize + squareSize / 2.0f;
     float startCY = offsetY + startRow * squareSize + squareSize / 2.0f;
@@ -143,9 +157,98 @@ std::vector<Vector2> BuildEasedCycle(const std::vector<Vector2>& base, int steps
     return result;
 }
 
+Move ParseMove(const std::string& uci)
+{
+    Move m;
+
+    m.from.x = uci[0] - 'a';
+    m.from.y = 8 - (uci[1] - '0');
+
+    m.to.x = uci[2] - 'a';
+    m.to.y = 8 - (uci[3] - '0');
+
+    if (uci.length() == 5) m.promotion = uci[4];
+
+    return m;
+}
+
+void ApplyMoveToBoard(Move m)
+{
+    auto piece = mat[m.from.y][m.from.x];
+
+    mat[m.to.y][m.to.x] = piece;
+    mat[m.from.y][m.from.x] = {' ', 0};
+
+    if (m.promotion) mat[m.to.y][m.to.x].first = m.promotion;
+}
+
+std::string GetEngineMove(const std::vector<std::string>& moves)
+{
+    std::string cmd = "position startpos moves ";
+
+    for (const std::string& m : moves) cmd += m + " ";
+
+    sf.send(cmd);
+    sf.send("go movetime 250");
+
+    std::string line;
+
+    while (true)
+    {
+        line = sf.readLine();
+        if (line.find("bestmove") != std::string::npos) return line.substr(9, 4);
+    }
+}
+
+// void PlayerMove(const std::string& move)
+// {
+//     moves.push_back(move);
+//     ApplyMoveToBoard(move);
+// }
+
+void EngineMove()
+{
+    std::string uci = GetEngineMove(moves);
+    Move m = ParseMove(uci);
+
+    points = BuildEasedCycle(GetEdgePath(GenerateMove(m), m), 4);
+
+    moves.push_back(uci);
+    ApplyMoveToBoard(m);
+}
+
+// void PlayTurn(const std::string& playerMove)
+// {
+//     PlayerMove(playerMove);
+//     EngineMove();
+// }
+
+void DrawMoveList()
+{
+    const int fontSize = 18;
+    const int padding = 20;
+    const int lineHeight = fontSize + 6;
+
+    int y = HEIGHT - padding - lineHeight;
+
+    std::string line;
+
+    for (int i = 0; i < moves.size(); i++)
+    {
+        line += moves[i] + " ";
+
+        if ((i + 1) % 6 == 0 || i == moves.size() - 1)
+        {
+            DrawText(line.c_str(), padding, y, fontSize, BLACK);
+            y -= lineHeight;
+            line.clear();
+        }
+    }
+}
+
 void UpdateChess(void)
 {
-    if (IsKeyPressed(KEY_SPACE)) points = BuildEasedCycle(GetEdgePath(GenerateMove("b2", "f7"), "b2", "f7"), 4);
+    if (IsKeyPressed(KEY_SPACE)) EngineMove();
 }
 
 void DrawChess(void)
@@ -186,5 +289,6 @@ void DrawChess(void)
         }
     }
 
-    for (const auto& p : points) DrawCircleV(p, 2.5f, MAROON);
+    for (const Vector2& p : points) DrawCircleV({p.x, HEIGHT - p.y}, 2.5f, MAROON);
+    DrawMoveList();
 }

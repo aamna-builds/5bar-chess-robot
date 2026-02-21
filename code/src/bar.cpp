@@ -89,7 +89,7 @@ void ModelK()
     if (step < points.size())
     {
         Vector2 p = points[step];
-        ModelIK({p.x, HEIGHT - p.y});
+        ModelIK({p.x, p.y});
         step++;
     }
     else step = 0;
