@@ -17,9 +17,22 @@ Design and implement a closed-loop 5-bar mechanism to automate chess piece movem
 
 This project uses **raylib**, a simple and easy-to-use library for game development.
 
-raylib is licensed under the zlib/libpng license.
+raylib is licensed under the **zlib/libpng license**.
 
-raylib website: https://www.raylib.com/  
-raylib repository: https://github.com/raysan5/raylib
+Official website: https://www.raylib.com  
+Source Code: https://github.com/raysan5/raylib
 
 Special thanks to Ramon Santamaria (raysan5) and contributors.
+
+---
+
+This project uses the **Stockfish chess engine**.
+
+Stockfish is licensed under the **GNU General Public License v3.0 (GPL-3.0)**.
+
+Stockfish is developed by the Stockfish developers and contributors.  
+Official website: https://stockfishchess.org  
+Source code: https://github.com/official-stockfish/Stockfish
+
+Stockfish is used as an external executable via the UCI (Universal Chess Interface) protocol.  
+No Stockfish source code is modified or embedded in this project.
