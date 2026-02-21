@@ -6,19 +6,20 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(RAYLIB_PATH "${CMAKE_SOURCE_DIR}/lib/raylib")
 
-add_executable(${PROJECT_NAME} src/main.cpp src/bar.cpp src/chess.cpp)
+add_executable(${PROJECT_NAME}
+    src/main.cpp
+    src/bar.cpp
+    src/chess.cpp 
+    src/stockfish.cpp
+)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${RAYLIB_PATH}/include
 )
 
-target_link_directories(${PROJECT_NAME} PRIVATE
-    ${RAYLIB_PATH}/lib
-)
-
 if (APPLE)
     target_link_libraries(${PROJECT_NAME}
-        raylib
+        ${RAYLIB_PATH}/lib/libraylib.a
         "-framework Cocoa"
         "-framework OpenGL"
         "-framework IOKit"
