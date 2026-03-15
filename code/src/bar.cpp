@@ -3,20 +3,20 @@
 #include <vector>
 #include "bar.h"
 #include "chess.h"
-#include "config.h"
+#include "state.h"
 
 const float EP = 1e-6f;
 
-float L1 = 160;
-float L2 = 160;
+float L1 = 240;
+float L2 = 240;
 float L3 = L2;
 float L4 = L1;
-float L5 = 90;
+float L5 = 135;
 
 float R1 = L1 + L2;
 float R2 = L3 + L4;
 
-Vector2 A = {(WIDTH - L5) / 2.0f, HEIGHT / 3.5f};
+Vector2 A = {(WIDTH - L5) / 2.0f, HEIGHT / 6.0f};
 Vector2 B = {A.x, A.y + L1};
 Vector2 C = {A.x + L5 / 2.0f, A.y + L4 + sqrt(L2 * L2 - L5 * L5 / 4.0f)};
 Vector2 D = {A.x + L5, A.y + L4};
@@ -86,31 +86,33 @@ void ModelK()
 {
     static int step = 0;
 
+    if (simState.moveQueue.empty()) return;
+    std::vector<Vector2> points = simState.moveQueue.front();
+
     if (step < points.size())
     {
+        simState.stage = Stage::Tracing;
+
         Vector2 p = points[step];
         ModelIK({p.x, p.y});
+        
         step++;
     }
-    else step = 0;
+    else
+    {
+        step = 0;
+        
+        simState.stage = Stage::TraceFinished;
+        simState.moveQueue.erase(simState.moveQueue.begin());
+    }
 }
 
 void UpdateBar(void)
 {
-    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) &&
-        CheckCollisionPointCircle(GetMousePosition(), {C.x, HEIGHT - C.y}, 10)) dragging = true;
+    // if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) &&
+    //     CheckCollisionPointCircle(GetMousePosition(), {C.x, HEIGHT - C.y}, 10)) dragging = true;
     
-    if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) dragging = false;
-
-    static float cTick = 0.0f;
-    static float tick = 0.1f;
-
-    cTick += GetFrameTime();
-    if (cTick >= tick)
-    {
-        cTick = 0.0f;
-        ModelK();
-    }
+    // if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) dragging = false;
 
     // if (dragging)
     // {
@@ -119,6 +121,26 @@ void UpdateBar(void)
 
     //     ModelIK(mPos);
     // }
+
+    static float cTick = 0.0f;
+    static float tick = 0.05f;
+
+    cTick += GetFrameTime();
+    if (cTick >= tick)
+    {
+        cTick = 0.0f;
+
+        // if (simState.stage != Stage::Tracing) simState.stage = Stage::MoveReady;
+
+        ModelK();
+
+        // if (simState.stage == Stage::Idle ||
+        //     simState.stage == Stage::MoveReady ||
+        //     simState.stage == Stage::Tracing)
+        // {
+        //     doMove();
+        // }
+    }
 }
 
 void DrawRange(void)
@@ -167,12 +189,14 @@ void DrawBar(void)
     {
         Vector2 p1 = *point[i];
         Vector2 p2 = *point[i + 1];
-        DrawLineEx({p1.x, HEIGHT - p1.y}, {p2.x, HEIGHT - p2.y}, 2.5f, DARKGRAY);
+        DrawLineEx({p1.x, HEIGHT - p1.y}, {p2.x, HEIGHT - p2.y}, 5.0f, MAROON);
     }
 
     for (int i = 0; i < 5; ++i)
     {
         Vector2 p = *point[i];
-        DrawCircle(p.x, HEIGHT - p.y, 2.5f, (i != 2 ? BLACK : DARKGREEN));
+        DrawCircle(p.x, HEIGHT - p.y, 5.0f, (i != 2 ? BLACK : (Color){57, 255, 20, 255}));
     }
+
+    // DrawRange();
 }

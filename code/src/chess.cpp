@@ -3,7 +3,8 @@
 #include <vector>
 #include "chess.h"
 #include "stockfish.h"
-#include "config.h"
+#include "ui.h"
+#include "state.h"
 
 struct Vector2i
 {
@@ -18,15 +19,33 @@ struct Move
     char promotion = 0;
 };
 
-int squareSize = 32;
-int fontSize = 20;
+struct PieceOut
+{
+    Move move;
+    std::pair<char, bool> piece;
+};
+
+static const char* glyphs[128] =
+{
+    ['k'] = "♚",
+    ['q'] = "♛",
+    ['r'] = "♜",
+    ['b'] = "♝",
+    ['n'] = "♞",
+    ['p'] = "♟"
+};
+
+int squareSize = 48;
+int fontSize = 35;
 
 int boardSize = 8 * squareSize;
 int offsetX = (WIDTH  - boardSize) / 2;
 int offsetY = (HEIGHT - boardSize) / 2;
 
-std::vector<Vector2> points;
+float stepSize = 3.0f;
+
 std::vector<std::string> moves;
+std::vector<PieceOut> pieceOut;
 
 std::pair<char, bool> mat[8][8] =
 {
@@ -40,14 +59,7 @@ std::pair<char, bool> mat[8][8] =
     {{'r', 1}, {'n', 1}, {'b', 1}, {'q', 1}, {'k', 1}, {'b', 1}, {'n', 1}, {'r', 1}}
 };
 
-float EaseInOut(float t)
-{
-    return (t < 0.5f)
-        ? 2.0f * t * t
-        : 1.0f - pow(-2.0f * t + 2.0f, 2.0f) / 2.0f;
-}
-
-std::vector<char> GenerateMove(Move m)
+std::vector<char> GenerateDirs(Move m)
 {
     std::vector<char> dirs;
 
@@ -128,31 +140,66 @@ std::vector<Vector2> GetEdgePath(const std::vector<char>& dirs, Move m)
     return vec;
 }
 
-std::vector<Vector2> BuildEasedCycle(const std::vector<Vector2>& base, int stepsPerSegment)
+float SegmentLength(Vector2 a, Vector2 b)
+{
+    float dx = b.x - a.x;
+    float dy = b.y - a.y;
+    return sqrtf(dx * dx + dy * dy);
+}
+
+float PathLength(const std::vector<Vector2>& path)
+{
+    float length = 0;
+
+    for (size_t i = 0; i < path.size() - 1; i++)
+    {
+        length += SegmentLength(path[i + 1], path[i]);
+    }
+
+    return length;
+}
+
+std::vector<Vector2> BuildEasedPath(const std::vector<Vector2>& base, int totalSteps)
 {
     std::vector<Vector2> result;
 
     if (base.size() < 2) return base;
 
+    std::vector<float> lengths;
+    lengths.push_back(0);
+
+    float totalLength = 0;
+
     for (size_t i = 0; i < base.size() - 1; i++)
     {
-        Vector2 a = base[i];
-        Vector2 b = base[i + 1];
-
-        for (int s = 0; s < stepsPerSegment; s++)
-        {
-            float t = (float)s / (float)stepsPerSegment;
-            t = EaseInOut(t);
-
-            Vector2 p;
-            p.x = a.x + (b.x - a.x) * t;
-            p.y = a.y + (b.y - a.y) * t;
-
-            result.push_back(p);
-        }
+        totalLength += SegmentLength(base[i], base[i+1]);
+        lengths.push_back(totalLength);
     }
 
-    result.push_back(base.back());
+    for (int step = 0; step <= totalSteps; step++)
+    {
+        float t = (float)step / (float)totalSteps;
+
+        float targetDist = t * totalLength;
+
+        for (size_t i = 0; i < lengths.size() - 1; i++)
+        {
+            if (targetDist >= lengths[i] && targetDist <= lengths[i+1])
+            {
+                float segT = (targetDist - lengths[i]) / (lengths[i+1] - lengths[i]);
+
+                Vector2 a = base[i];
+                Vector2 b = base[i+1];
+
+                Vector2 p;
+                p.x = a.x + (b.x - a.x) * segT;
+                p.y = a.y + (b.y - a.y) * segT;
+
+                result.push_back(p);
+                break;
+            }
+        }
+    }
 
     return result;
 }
@@ -172,14 +219,20 @@ Move ParseMove(const std::string& uci)
     return m;
 }
 
-void ApplyMoveToBoard(Move m)
+void ApplyMoveToBoard(Move m, bool undo)
 {
     auto piece = mat[m.from.y][m.from.x];
+    auto pieceOld = mat[m.to.y][m.to.x];
+
+    if (!undo) pieceOut.push_back({m, pieceOld});
 
     mat[m.to.y][m.to.x] = piece;
     mat[m.from.y][m.from.x] = {' ', 0};
 
-    if (m.promotion) mat[m.to.y][m.to.x].first = m.promotion;
+    if (m.promotion)
+    {
+        mat[m.to.y][m.to.x].first = m.promotion;
+    }
 }
 
 std::string GetEngineMove(const std::vector<std::string>& moves)
@@ -189,7 +242,7 @@ std::string GetEngineMove(const std::vector<std::string>& moves)
     for (const std::string& m : moves) cmd += m + " ";
 
     sf.send(cmd);
-    sf.send("go movetime 250");
+    sf.send("go movetime 150");
 
     std::string line;
 
@@ -200,28 +253,50 @@ std::string GetEngineMove(const std::vector<std::string>& moves)
     }
 }
 
-// void PlayerMove(const std::string& move)
-// {
-//     moves.push_back(move);
-//     ApplyMoveToBoard(move);
-// }
-
-void EngineMove()
+void MakeMove(Move m, bool undo)
 {
-    std::string uci = GetEngineMove(moves);
-    Move m = ParseMove(uci);
+    std::vector<Vector2> edgePath = GetEdgePath(GenerateDirs(m), m);
+    simState.moveQueue.push_back(BuildEasedPath(edgePath, ceil(PathLength(edgePath) / stepSize)));
 
-    points = BuildEasedCycle(GetEdgePath(GenerateMove(m), m), 4);
-
-    moves.push_back(uci);
-    ApplyMoveToBoard(m);
+    ApplyMoveToBoard(m, undo);
 }
 
-// void PlayTurn(const std::string& playerMove)
-// {
-//     PlayerMove(playerMove);
-//     EngineMove();
-// }
+void Undo()
+{
+    if (moves.empty()) return;
+    if (pieceOut.empty()) return;
+    
+    std::string move = moves.back();
+
+    Move m = ParseMove(move);
+    PieceOut po = pieceOut.back();
+    
+    std::swap(move[0], move[2]);
+    std::swap(move[1], move[3]);
+    
+    m = ParseMove(move);
+    MakeMove(m, true);
+    
+    mat[m.from.y][m.from.x] = po.piece;
+
+    pieceOut.pop_back();
+    moves.pop_back();
+}
+
+void EngineTurn()
+{
+    std::string uci = GetEngineMove(moves);
+
+    Move m = ParseMove(uci);
+    MakeMove(m, false);
+
+    moves.push_back(uci);
+}
+
+void PlayerTurn(const std::string& playerMove)
+{
+    
+}
 
 void DrawMoveList()
 {
@@ -237,18 +312,22 @@ void DrawMoveList()
     {
         line += moves[i] + " ";
 
-        if ((i + 1) % 6 == 0 || i == moves.size() - 1)
+        if ((i + 1) % 16 == 0 || i == moves.size() - 1)
         {
-            DrawText(line.c_str(), padding, y, fontSize, BLACK);
+            DrawText(line.c_str(), padding, y, fontSize, WHITE);
             y -= lineHeight;
             line.clear();
         }
     }
 }
-
+    
 void UpdateChess(void)
 {
-    if (IsKeyPressed(KEY_SPACE)) EngineMove();
+    if (simState.stage == Stage::TraceFinished)
+    {
+        if (IsKeyPressed(KEY_SPACE)) EngineTurn();
+        else if (IsKeyPressed(KEY_C)) Undo();
+    }
 }
 
 void DrawChess(void)
@@ -268,6 +347,13 @@ void DrawChess(void)
         }
     }
 
+    DrawRectangleLinesEx({(float)offsetX, (float)offsetY, squareSize * 8.0f, squareSize * 8.0f}, 7.5f, BROWN);
+
+    if (!simState.moveQueue.empty())
+    {
+        for (const Vector2& p : simState.moveQueue.front()) DrawCircleV({p.x, HEIGHT - p.y}, 2.5f, PINK);
+    }
+
     for (int row = 0; row < 8; ++row)
     {
         for (int col = 0; col < 8; ++col)
@@ -276,19 +362,17 @@ void DrawChess(void)
 
             if (piece == ' ') continue;
 
-            bool isWhite = mat[row][col].second;
-            Color pieceColor = isWhite ? WHITE : BLACK;
-
-            DrawText(
-                TextFormat("%c", piece),
-                offsetX + col * squareSize + squareSize / 3,
-                offsetY + row * squareSize + squareSize / 4,
+            DrawTextEx(
+                chessFont,
+                glyphs[piece],
+                {offsetX + 0.0f + col * squareSize + squareSize / 4,
+                offsetY + 0.0f + row * squareSize + squareSize / 6},
                 fontSize,
-                pieceColor
+                0.0f,
+                mat[row][col].second ? WHITE : BLACK
             );
         }
     }
-
-    for (const Vector2& p : points) DrawCircleV({p.x, HEIGHT - p.y}, 2.5f, MAROON);
+    
     DrawMoveList();
 }
