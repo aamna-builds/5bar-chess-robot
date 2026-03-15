@@ -11,7 +11,10 @@ add_executable(${PROJECT_NAME}
     src/bar.cpp
     src/chess.cpp 
     src/stockfish.cpp
+    src/ui.cpp
 )
+
+file(COPY assets DESTINATION ${CMAKE_BINARY_DIR})
 
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${RAYLIB_PATH}/include
