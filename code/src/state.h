@@ -15,8 +15,9 @@ enum class Stage
 
 struct SimState
 {
-    Vector2 accPos;
+    // Vector2 accPos;
     Stage stage = Stage::TraceFinished;
+    std::vector<bool> latchQueue;
     std::vector<std::vector<Vector2>> moveQueue;
 };
 

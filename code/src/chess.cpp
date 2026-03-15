@@ -256,6 +256,8 @@ std::string GetEngineMove(const std::vector<std::string>& moves)
 void MakeMove(Move m, bool undo)
 {
     std::vector<Vector2> edgePath = GetEdgePath(GenerateDirs(m), m);
+
+    simState.latchQueue.push_back(true);
     simState.moveQueue.push_back(BuildEasedPath(edgePath, ceil(PathLength(edgePath) / stepSize)));
 
     ApplyMoveToBoard(m, undo);
@@ -300,27 +302,27 @@ void PlayerTurn(const std::string& playerMove)
 
 void DrawMoveList()
 {
-    const int fontSize = 18;
-    const int padding = 20;
-    const int lineHeight = fontSize + 6;
+    const int fontSize = 14;
+    const int padding = 25;
+    const int lineHeight = fontSize + 8;
+    const Color MOVE_TEXT = { 100, 100, 110, 255 };
 
     int y = HEIGHT - padding - lineHeight;
-
     std::string line;
 
     for (int i = 0; i < moves.size(); i++)
     {
-        line += moves[i] + " ";
+        line += moves[i] + "  ";
 
-        if ((i + 1) % 16 == 0 || i == moves.size() - 1)
+        if ((i + 1) % 12 == 0 || i == (int)moves.size() - 1)
         {
-            DrawText(line.c_str(), padding, y, fontSize, WHITE);
+            DrawTextEx(font, line.c_str(), { (float)padding, (float)y }, fontSize, 1.0f, MOVE_TEXT);
             y -= lineHeight;
             line.clear();
         }
     }
 }
-    
+
 void UpdateChess(void)
 {
     if (simState.stage == Stage::TraceFinished)
@@ -330,28 +332,43 @@ void UpdateChess(void)
     }
 }
 
-void DrawChess(void)
+ void DrawChess(void)
 {
+    static const Color TILE_LIGHT = { 235, 235, 208, 255 };
+    static const Color TILE_DARK = { 119, 148, 85, 255 };
+    static const Color BORDER_COLOR = { 80, 80, 70, 255 };
+    static const Color PIECE_WHITE = { 255, 255, 255, 255 };
+    static const Color PIECE_BLACK = { 20, 20, 20, 255 };
+    static const Color PIECE_OUTLINE = { 40, 40, 40, 100 };
+    static const Color TRAJECTORY_COLOR = { 0, 150, 255, 255 }; 
+
+    for (int i = 0; i < 8; i++)
+    {
+        const char* rank = TextFormat("%d", 8 - i);
+        const char* file = TextFormat("%c", 'A' + i);
+        DrawTextEx(font, rank, { (float)offsetX - 20, (float)offsetY + i * squareSize + squareSize / 3.0f }, 16, 1, BORDER_COLOR);
+        DrawTextEx(font, file, { (float)offsetX + i * squareSize + squareSize / 2.5f, (float)offsetY + 8 * squareSize + 10 }, 16, 1, BORDER_COLOR);
+    }
+
     for (int row = 0; row < 8; ++row)
     {
         for (int col = 0; col < 8; ++col)
         {
-            bool isLight = (row + col) % 2 == 0;
-            Color tileColor = isLight ? Color{240, 217, 181, 255} : Color{181, 136, 99, 255};
-
-            DrawRectangle(
-                offsetX + col * squareSize,
-                offsetY + row * squareSize,
-                squareSize, squareSize, tileColor
-            );
+            Color tileColor = ((row + col) % 2 == 0) ? TILE_LIGHT : TILE_DARK;
+            DrawRectangle(offsetX + col * squareSize, offsetY + row * squareSize, squareSize, squareSize, tileColor);
         }
     }
 
-    DrawRectangleLinesEx({(float)offsetX, (float)offsetY, squareSize * 8.0f, squareSize * 8.0f}, 7.5f, BROWN);
+    DrawRectangleLinesEx({ (float)offsetX - 4, (float)offsetY - 4, squareSize * 8.0f + 8, squareSize * 8.0f + 8 }, 4.0f, BORDER_COLOR);
 
     if (!simState.moveQueue.empty())
     {
-        for (const Vector2& p : simState.moveQueue.front()) DrawCircleV({p.x, HEIGHT - p.y}, 2.5f, PINK);
+        for (const Vector2& p : simState.moveQueue.front()) 
+        {
+            Vector2 screenPos = { p.x, HEIGHT - p.y };
+            DrawCircleV(screenPos, 2.0f, WHITE);
+            DrawCircleV(screenPos, 1.5f, TRAJECTORY_COLOR);
+        }
     }
 
     for (int row = 0; row < 8; ++row)
@@ -359,18 +376,25 @@ void DrawChess(void)
         for (int col = 0; col < 8; ++col)
         {
             char piece = mat[row][col].first;
-
             if (piece == ' ') continue;
 
-            DrawTextEx(
-                chessFont,
-                glyphs[piece],
-                {offsetX + 0.0f + col * squareSize + squareSize / 4,
-                offsetY + 0.0f + row * squareSize + squareSize / 6},
-                fontSize,
-                0.0f,
-                mat[row][col].second ? WHITE : BLACK
-            );
+            bool isWhite = mat[row][col].second;
+            Color pieceColor = isWhite ? PIECE_WHITE : PIECE_BLACK;
+            Vector2 pos = { offsetX + col * squareSize + squareSize / 4.0f, offsetY + row * squareSize + squareSize / 6.0f };
+
+            if (isWhite)
+            {
+                DrawTextEx(chessFont, glyphs[piece], { pos.x - 1, pos.y }, fontSize, 0.0f, PIECE_OUTLINE);
+                DrawTextEx(chessFont, glyphs[piece], { pos.x + 1, pos.y }, fontSize, 0.0f, PIECE_OUTLINE);
+                DrawTextEx(chessFont, glyphs[piece], { pos.x, pos.y - 1 }, fontSize, 0.0f, PIECE_OUTLINE);
+                DrawTextEx(chessFont, glyphs[piece], { pos.x, pos.y + 1 }, fontSize, 0.0f, PIECE_OUTLINE);
+            }
+            else 
+            {
+                DrawTextEx(chessFont, glyphs[piece], { pos.x + 2, pos.y + 2 }, fontSize, 0.0f, { 0, 0, 0, 50 });
+            }
+            
+            DrawTextEx(chessFont, glyphs[piece], pos, fontSize, 0.0f, pieceColor);
         }
     }
     

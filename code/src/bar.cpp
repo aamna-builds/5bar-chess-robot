@@ -3,6 +3,7 @@
 #include <vector>
 #include "bar.h"
 #include "chess.h"
+#include "ui.h"
 #include "state.h"
 
 const float EP = 1e-6f;
@@ -104,23 +105,32 @@ void ModelK()
         
         simState.stage = Stage::TraceFinished;
         simState.moveQueue.erase(simState.moveQueue.begin());
+        simState.latchQueue.erase(simState.latchQueue.begin());
     }
+}
+
+Vector2 GetBaseAngles() 
+{
+    float angleA = atan2(B.y - A.y, B.x - A.x) * RAD2DEG;
+    float angleE = atan2(D.y - E.y, D.x - E.x) * RAD2DEG;
+    
+    return { angleA, angleE };
 }
 
 void UpdateBar(void)
 {
-    // if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) &&
-    //     CheckCollisionPointCircle(GetMousePosition(), {C.x, HEIGHT - C.y}, 10)) dragging = true;
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) &&
+        CheckCollisionPointCircle(GetMousePosition(), {C.x, HEIGHT - C.y}, 10)) dragging = true;
     
-    // if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) dragging = false;
+    if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) dragging = false;
 
-    // if (dragging)
-    // {
-    //     Vector2 mPos = GetMousePosition();
-    //     mPos.y = HEIGHT - mPos.y;
+    if (dragging && simState.stage != Stage::Tracing)
+    {
+        Vector2 mPos = GetMousePosition();
+        mPos.y = HEIGHT - mPos.y;
 
-    //     ModelIK(mPos);
-    // }
+        ModelIK(mPos);
+    }
 
     static float cTick = 0.0f;
     static float tick = 0.05f;
@@ -130,16 +140,7 @@ void UpdateBar(void)
     {
         cTick = 0.0f;
 
-        // if (simState.stage != Stage::Tracing) simState.stage = Stage::MoveReady;
-
         ModelK();
-
-        // if (simState.stage == Stage::Idle ||
-        //     simState.stage == Stage::MoveReady ||
-        //     simState.stage == Stage::Tracing)
-        // {
-        //     doMove();
-        // }
     }
 }
 
@@ -185,18 +186,48 @@ void DrawRange(void)
 
 void DrawBar(void)
 {
+    static const Color ARM_PRIMARY = { 45, 45, 55, 255 }; 
+    static const Color JOINT_ACCENT = { 70, 70, 85, 255 };
+    static const Color STATUS_ACTIVE = { 34, 197, 94, 255 };
+    static const Color STATUS_BUSY = { 249, 115, 22, 255 };
+
     for (int i = 0; i < 4; ++i)
     {
-        Vector2 p1 = *point[i];
-        Vector2 p2 = *point[i + 1];
-        DrawLineEx({p1.x, HEIGHT - p1.y}, {p2.x, HEIGHT - p2.y}, 5.0f, MAROON);
+        Vector2 p1 = { point[i]->x, HEIGHT - point[i]->y };
+        Vector2 p2 = { point[i + 1]->x, HEIGHT - point[i + 1]->y };
+        
+        DrawLineEx(p1, p2, 5.0f, { 0, 0, 0, 30 }); 
+        DrawLineEx(p1, p2, 3.5f, ARM_PRIMARY);
     }
 
     for (int i = 0; i < 5; ++i)
     {
-        Vector2 p = *point[i];
-        DrawCircle(p.x, HEIGHT - p.y, 5.0f, (i != 2 ? BLACK : (Color){57, 255, 20, 255}));
+        Color statusColor = JOINT_ACCENT;
+
+        if (i == 2)
+        {
+            if (!simState.latchQueue.empty() && simState.latchQueue.front()) statusColor = STATUS_BUSY;
+            else statusColor = STATUS_ACTIVE;
+        }
+
+        Vector2 p = { point[i]->x, HEIGHT - point[i]->y };
+        
+        DrawCircleV(p, 8.0f, WHITE);
+        DrawCircleLinesV(p, 8.0f, ARM_PRIMARY);
+        DrawCircleV(p, 4.0f, statusColor);
     }
 
-    // DrawRange();
+    Vector2 angles = GetBaseAngles();
+    const float arcRadius = 15.0f;
+    const Color TEXT_COLOR = { 60, 60, 70, 255 };
+
+    Vector2 screenA = { A.x, HEIGHT - A.y };
+    for(int t = 0; t < 5; t++) 
+        DrawCircleSectorLines(screenA, arcRadius - (t * 0.5f), 0, -angles.x, 16, ARM_PRIMARY);
+    DrawTextEx(font, TextFormat("%.1f deg", angles.x), { screenA.x - 25, screenA.y + 20 }, 13, 1, TEXT_COLOR);
+
+    Vector2 screenE = { E.x, HEIGHT - E.y };
+    for(int t = 0; t < 5; t++) 
+        DrawCircleSectorLines(screenE, arcRadius - (t * 0.5f), 0, -angles.y, 16, ARM_PRIMARY);
+    DrawTextEx(font, TextFormat("%.1f deg", angles.y), { screenE.x - 25, screenE.y + 20 }, 13, 1, TEXT_COLOR);
 }
