@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  matlab-octave:
+    name: MATLAB toolbox (GNU Octave)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Octave
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends octave
+      - name: Kinematics tests
+        working-directory: matlab
+        run: octave --no-gui --no-window-system --eval "run_tests"
+      - name: Square table is up to date
+        working-directory: matlab
+        run: |
+          octave --no-gui --no-window-system --eval "export_tables"
+          git diff --exit-code output/square_table.csv
+
+  python:
+    name: Host software (Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.9", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install
+        run: pip install -e "host[dev]"
+      - name: Tests
+        working-directory: host
+        run: pytest -q
+      - name: Smoke-test the CLI
+        working-directory: host
+        run: |
+          python -m fivebar_chess check
+          python -m fivebar_chess replay --sim examples/special_moves.txt --strict
+
+  firmware:
+    name: Firmware
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: config.h matches config/robot.json
+        run: python3 tools/gen_firmware_config.py --check
+      - name: PC unit tests (kinematics, protocol, MATLAB cross-check)
+        run: tools/test_firmware.sh
+      - uses: arduino/setup-arduino-cli@v2
+      - name: Compile for Arduino Uno
+        run: |
+          arduino-cli core update-index
+          arduino-cli core install arduino:avr
+          arduino-cli lib install Servo
+          tools/build_firmware.sh
