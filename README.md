@@ -91,9 +91,9 @@ Play chess against the robot, drag the arm into singularities, and reshape the l
 <th>CAD assembly</th>
 </tr>
 <tr>
-<td><img src="media/gifs/magnet-flip.gif" alt="Magnet flip"></td>
-<td><img src="media/gifs/top-down-run.gif" alt="Top-down run"></td>
-<td><img src="media/gifs/cad-assembly.gif" alt="CAD"></td>
+<td><img loading="lazy" src="media/gifs/magnet-flip.gif" alt="Magnet flip"></td>
+<td><img loading="lazy" src="media/gifs/top-down-run.gif" alt="Top-down run"></td>
+<td><img loading="lazy" src="media/gifs/cad-assembly.gif" alt="CAD"></td>
 </tr>
 </table>
 
@@ -102,7 +102,7 @@ Play chess against the robot, drag the arm into singularities, and reshape the l
 The first build worked, but it was jumpy near the motors and lost accuracy at the edges of the board. The MATLAB analysis found the cause.
 
 <p align="center">
-  <img src="matlab/figures/workspace_v1_vs_v2.png" width="92%" alt="v1 vs v2 workspace">
+  <img loading="lazy" src="matlab/figures/workspace_v1_vs_v2.png" width="92%" alt="v1 vs v2 workspace">
 </p>
 
 The colour shows how far each point is from a **singularity**, an arm pose where the linkage loses control.
@@ -123,7 +123,7 @@ The colour shows how far each point is from a **singularity**, an arm pose where
 ## 🌐 Live simulator
 
 <p align="center">
-  <a href="https://aamna-builds.github.io/5bar-chess-robot/"><img src="media/photos/simulator.png" width="92%" alt="Live simulator"></a>
+  <a href="https://aamna-builds.github.io/5bar-chess-robot/"><img loading="lazy" src="media/photos/simulator.jpg" width="92%" alt="Live simulator"></a>
 </p>
 
 The [browser simulator](https://aamna-builds.github.io/5bar-chess-robot/) runs the same kinematics, rules and path planner as the real robot:
@@ -150,7 +150,7 @@ flowchart LR
 - **Paths:** a piece moves in a straight line when it clears every other piece. Otherwise it follows the grid lines between squares, which always leave half a square of space.
 
 <p align="center">
-  <img src="matlab/figures/motion_demo.png" width="92%" alt="Motion planning demo">
+  <img loading="lazy" src="matlab/figures/motion_demo.png" width="92%" alt="Motion planning demo">
 </p>
 
 ## 🚀 Quick start
@@ -208,12 +208,12 @@ tools/      config generator, build/test scripts, banner
 
 <table>
 <tr>
-<td width="50%"><img src="media/photos/final-board-top.jpg" alt="Board from above"></td>
-<td width="50%"><img src="media/photos/board-closeup.jpg" alt="Board close-up"></td>
+<td width="50%"><img loading="lazy" src="media/photos/final-board-top.jpg" alt="Board from above"></td>
+<td width="50%"><img loading="lazy" src="media/photos/board-closeup.jpg" alt="Board close-up"></td>
 </tr>
 <tr>
-<td><img src="media/photos/full-setup.jpg" alt="Full setup"></td>
-<td><img src="media/photos/electronics.jpg" alt="Electronics"></td>
+<td><img loading="lazy" src="media/photos/full-setup.jpg" alt="Full setup"></td>
+<td><img loading="lazy" src="media/photos/electronics.jpg" alt="Electronics"></td>
 </tr>
 </table>
 
