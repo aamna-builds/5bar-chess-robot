@@ -1,0 +1,38 @@
+run_tests: 6 groups passed
+== v1 - as built (April 2026) ==
+squares inside v2 limits     : 54 / 64
+worst square                 : c8 (margin 0.4 deg)
+travel points out of reach   : 2
+graveyard slots (right/left) : 15 / 15
+worst dexterity 1/cond(J)    : 0.003
+coarsest resolution          : 1.3998 mm per microstep
+elbow sweep envelope         : x -332..332 mm, y -227..250 mm (keep clear)
+== v2 - optimised layout ==
+squares inside v2 limits     : 64 / 64
+worst square                 : d8 (margin 27.7 deg)
+travel points out of reach   : 0
+graveyard slots (right/left) : 15 / 15
+worst dexterity 1/cond(J)    : 0.255
+coarsest resolution          : 0.0801 mm per microstep
+elbow sweep envelope         : x -315..315 mm, y -193..265 mm (keep clear)
+saved figures/workspace_v1_vs_v2.png
+== Layout optimisation ==
+feasible layouts evaluated : 10853
+v1 (as built)  L1=250 L2=290 d=165 y0=62.5  -> 2 of 319 travel points out of reach, min margin on the rest  0.03 deg
+v2 (optimised) L1=265 L2=315 d=100 y0=120  -> min margin  21.76 deg
+saved figures/layout_optimisation.png
+== Torque and speed demand (assumed loads) ==
+v1 as built   peak torque on board 110.515 N m (squares only 29.552 N m), peak step rate 38480 /s
+v2 optimised  peak torque on board 0.504 N m (squares only 0.458 N m), peak step rate 7926 /s
+saved figures/torque_and_speed.png
+bare NEMA 17 budget 0.25 N m, geared 4.4 N m, firmware step budget 20000 /s
+e2-e4                 1.13 s, min margin  70.3 deg, path  100.0 mm
+travel (magnet off)   2.16 s, min margin  31.2 deg, path  223.6 mm
+g8-f6 (knight)        1.91 s, min margin  31.2 deg, path  120.7 mm
+travel (magnet off)   1.23 s, min margin  49.3 deg, path  111.8 mm
+d5 -> graveyard       4.57 s, min margin  39.0 deg, path  404.4 mm
+travel (magnet off)   2.77 s, min margin  43.7 deg, path  296.3 mm
+e4xd5                 0.89 s, min margin  59.0 deg, path   70.7 mm
+saved figures/motion_demo.png
+saved figures/motion_demo.gif (149 frames)
+wrote output/square_table.csv (94 rows)
