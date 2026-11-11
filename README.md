@@ -34,7 +34,7 @@ The robot was built and demonstrated in April 2026. Since then, the analysis has
 <tr>
 <td width="25%" valign="top">
 
-**📐 MATLAB toolbox**
+**MATLAB toolbox**
 
 Kinematics, singularity maps, layout optimisation, torque analysis and motion planning.
 <br><a href="matlab/">matlab/</a>
@@ -42,7 +42,7 @@ Kinematics, singularity maps, layout optimisation, torque analysis and motion pl
 </td>
 <td width="25%" valign="top">
 
-**♟️ Python host**
+**Python host**
 
 Its own chess rules engine, collision-free path planning, side graveyards and a simulator.
 <br><a href="host/">host/</a>
@@ -50,7 +50,7 @@ Its own chess rules engine, collision-free path planning, side graveyards and a 
 </td>
 <td width="25%" valign="top">
 
-**⚙️ Arduino firmware**
+**Arduino firmware**
 
 On-board inverse kinematics, a safety check on every move, and smooth coordinated stepping.
 <br><a href="firmware/">firmware/</a>
@@ -58,7 +58,7 @@ On-board inverse kinematics, a safety check on every move, and smooth coordinate
 </td>
 <td width="25%" valign="top">
 
-**🌐 Live simulator**
+**Live simulator**
 
 Play chess against the robot, drag the arm into singularities, and reshape the linkage, all in your browser.
 <br><a href="https://aamna-builds.github.io/5bar-chess-robot/">open it</a> · <a href="simulation/">simulation/</a>
@@ -67,7 +67,7 @@ Play chess against the robot, drag the arm into singularities, and reshape the l
 </tr>
 </table>
 
-## 🎬 Demo
+##Demo
 
 <table>
 <tr>
@@ -97,7 +97,7 @@ Play chess against the robot, drag the arm into singularities, and reshape the l
 </tr>
 </table>
 
-## 🔍 Why v2
+## Why v2
 
 The first build worked, but it was jumpy near the motors and lost accuracy at the edges of the board. The MATLAB analysis found the cause.
 
@@ -120,7 +120,7 @@ The colour shows how far each point is from a **singularity**, an arm pose where
 
 <sub>The full before-and-after is in <a href="docs/journey.md#6-v2-understanding-the-problems-then-fixing-them">the project journey</a>.</sub>
 
-## 🌐 Live simulator
+## Live simulator
 
 <p align="center">
   <a href="https://aamna-builds.github.io/5bar-chess-robot/"><img loading="lazy" src="media/photos/simulator.jpg" width="92%" alt="Live simulator"></a>
@@ -134,7 +134,7 @@ The [browser simulator](https://aamna-builds.github.io/5bar-chess-robot/) runs t
 
 Nothing is installed: it's a single page with no external libraries, and it's tested in CI alongside everything else.
 
-## 🧠 How it works
+## How it works
 
 ```mermaid
 flowchart LR
@@ -153,7 +153,7 @@ flowchart LR
   <img loading="lazy" src="matlab/figures/motion_demo.png" width="92%" alt="Motion planning demo">
 </p>
 
-## 🚀 Quick start
+##  Quick start
 
 <details open>
 <summary><b>MATLAB / Octave</b>: regenerate every figure</summary>
@@ -191,7 +191,7 @@ python -m fivebar_chess play --port /dev/ttyUSB0 --engine /path/to/stockfish  # 
 A chess engine is optional and runs as a separate program you install yourself.
 </details>
 
-## 📁 Repository layout
+## Repository layout
 
 ```
 config/     robot.json (v2) · robot_v1.json (as built): one config shared by everything
@@ -204,7 +204,7 @@ media/      photos, GIFs and videos of the build
 tools/      config generator, build/test scripts, banner
 ```
 
-## 🛠️ The build
+## The build
 
 <table>
 <tr>
@@ -218,7 +218,7 @@ tools/      config generator, build/test scripts, banner
 </table>
 
 <p align="center">
-  🎥 <a href="media/videos/final-demo.mp4">Final demo</a> ·
+  <a href="media/videos/final-demo.mp4">Final demo</a> ·
   <a href="media/videos/top-down-run-1.mp4">Top-down run 1</a> ·
   <a href="media/videos/top-down-run-2.mp4">Top-down run 2</a> ·
   <a href="media/videos/magnet-flip.mp4">Magnet flip</a> ·
@@ -229,7 +229,7 @@ tools/      config generator, build/test scripts, banner
 
 The full story, from proposal to torque problems, redesign, demo and v2, is in [**docs/journey.md**](docs/journey.md).
 
-## 📊 Status
+## Status
 
 | | |
 |---|---|
@@ -241,7 +241,7 @@ The full story, from proposal to torque problems, redesign, demo and v2, is in [
 
 The same software drives the original robot with `--config config/robot_v1.json`.
 
-## 🎓 Background
+## Background
 
 This started as the course project for **MEC308 – Mechanics of Machines, Vibrations and Structures** (B.Tech Mechanical Engineering), under Prof. Ashitava Ghosal. It applies the course material directly: mechanism synthesis, Gruebler's criterion, position and velocity analysis of closed-loop linkages, and torque sizing.
 
