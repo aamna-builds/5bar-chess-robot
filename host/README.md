@@ -1,6 +1,6 @@
 # Host software (`fivebar_chess`)
 
-The host is pure Python 3.9 or later with no required dependencies:
+The host is pure Python 3.10 or later with no required dependencies:
 
 - `pyserial` is needed only to drive the real robot.
 - `matplotlib` and `pillow` are needed only for the animations.

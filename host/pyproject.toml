@@ -7,7 +7,7 @@ name = "fivebar-chess"
 version = "2.0.0"
 description = "Host software for a 5-bar parallel linkage chess robot"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [{ name = "Aamna Khan" }]
 dependencies = []

@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/aamna-builds/5bar-chess-robot/actions/workflows/ci.yml/badge.svg)](https://github.com/aamna-builds/5bar-chess-robot/actions/workflows/ci.yml)
 ![MATLAB](https://img.shields.io/badge/MATLAB%20%2F%20Octave-toolbox-orange)
-![Python](https://img.shields.io/badge/python-3.9%2B-blue)
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![Arduino](https://img.shields.io/badge/Arduino-Uno-00979D)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
