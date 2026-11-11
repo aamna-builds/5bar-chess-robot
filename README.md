@@ -67,7 +67,7 @@ Play chess against the robot, drag the arm into singularities, and reshape the l
 </tr>
 </table>
 
-# #Demo
+# Demo
 
 <table>
 <tr>
