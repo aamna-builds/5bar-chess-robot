@@ -1,0 +1,62 @@
+{
+  "_comment": "v2 geometry (output of matlab/optimize_layout.m). Single source of truth for the robot. MATLAB, the Python host and the firmware header (tools/gen_firmware_config.py) all read this file. Lengths in mm, angles in degrees.",
+
+  "geometry": {
+    "proximal_mm": 265.0,
+    "distal_mm": 315.0,
+    "motor_spacing_mm": 100.0
+  },
+
+  "board": {
+    "square_mm": 50.0,
+    "near_edge_y_mm": 120.0,
+    "rank_nearest_motors": 8,
+    "a_file_side": "+x"
+  },
+
+  "piece": {
+    "base_diameter_mm": 22.0
+  },
+
+  "graveyard": {
+    "x_offset_from_board_edge_mm": 30.0,
+    "pitch_mm": 26.0,
+    "white_side": "+x"
+  },
+
+  "drive": {
+    "full_steps_per_rev": 200,
+    "microsteps": 8,
+    "gear_ratio": 14.0,
+    "home_deg": [120.0, 60.0],
+    "invert_left": false,
+    "invert_right": false
+  },
+
+  "motion": {
+    "max_speed_mm_s": 120.0,
+    "accel_mm_s2": 400.0,
+    "segment_mm": 1.0,
+    "magnet_settle_ms": 250
+  },
+
+  "safety": {
+    "min_transmission_deg": 20.0,
+    "min_elbow_deg": 20.0
+  },
+
+  "magnet_servo": {
+    "pin": 10,
+    "engaged_deg": 0,
+    "released_deg": 180
+  },
+
+  "pins": {
+    "left_step": 6,
+    "left_dir": 5,
+    "right_step": 3,
+    "right_dir": 2,
+    "enable": -1,
+    "enable_disables_on_high": true
+  }
+}
