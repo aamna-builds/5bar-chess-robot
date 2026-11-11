@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fivebar-chess"
+version = "2.0.0"
+description = "Host software for a 5-bar parallel linkage chess robot"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Aamna Khan" }]
+dependencies = []
+
+[project.optional-dependencies]
+robot = ["pyserial>=3.5"]
+sim = ["matplotlib>=3.5", "pillow>=9"]
+dev = ["pytest>=7", "matplotlib>=3.5", "pillow>=9"]
+
+[tool.setuptools]
+packages = ["fivebar_chess"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
