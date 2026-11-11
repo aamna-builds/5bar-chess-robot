@@ -10,6 +10,10 @@
   <img src="https://img.shields.io/badge/license-MIT-22c55e" alt="MIT">
 </p>
 
+<h3 align="center">
+  <a href="https://aamna-builds.github.io/5bar-chess-robot/">▶ Play against the robot in your browser</a>
+</h3>
+
 <p align="center">
   <a href="#-demo">Demo</a> ·
   <a href="#-why-v2">Why v2</a> ·
@@ -54,10 +58,10 @@ On-board inverse kinematics, a safety check on every move, and smooth coordinate
 </td>
 <td width="25%" valign="top">
 
-**✅ Tested on every push**
+**🌐 Live simulator**
 
-MATLAB, Python and firmware tests in CI, cross-checked against each other.
-<br><a href=".github/workflows/ci.yml">ci.yml</a>
+Play chess against the robot, drag the arm into singularities, and reshape the linkage, all in your browser.
+<br><a href="https://aamna-builds.github.io/5bar-chess-robot/">open it</a> · <a href="simulation/">simulation/</a>
 
 </td>
 </tr>
@@ -115,6 +119,20 @@ The colour shows how far each point is from a **singularity**, an arm pose where
 | Firmware safety limits | none | **every move checked** |
 
 <sub>The full before-and-after is in <a href="docs/journey.md#6-v2-understanding-the-problems-then-fixing-them">the project journey</a>.</sub>
+
+## 🌐 Live simulator
+
+<p align="center">
+  <a href="https://aamna-builds.github.io/5bar-chess-robot/"><img src="media/photos/simulator.png" width="92%" alt="Live simulator"></a>
+</p>
+
+The [browser simulator](https://aamna-builds.github.io/5bar-chess-robot/) runs the same kinematics, rules and path planner as the real robot:
+
+- **Play chess:** play against the robot, two players, or let the robot play itself. The magnet routes every move, captured pieces park at the side, and each firmware command is listed as it would be sent.
+- **Drive the arm:** drag the magnet around over a live singularity map. It stops at the red zones, just like the firmware.
+- **Change the geometry:** switch between v1 and v2, or drag the link-length sliders, and watch the reachable area and the unsafe squares change.
+
+Nothing is installed: it's a single page with no external libraries, and it's tested in CI alongside everything else.
 
 ## 🧠 How it works
 
@@ -180,6 +198,7 @@ config/     robot.json (v2) · robot_v1.json (as built): one config shared by ev
 matlab/     analysis toolbox, figures/, output/
 host/       Python package: rules, planner, serial driver, simulator, tests
 firmware/   Arduino sketch + PC unit tests
+simulation/ browser simulator (GitHub Pages) + Node tests
 docs/       journey · hardware · kinematics
 media/      photos, GIFs and videos of the build
 tools/      config generator, build/test scripts, banner

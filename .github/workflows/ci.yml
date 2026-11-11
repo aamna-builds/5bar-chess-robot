@@ -60,3 +60,16 @@ jobs:
           arduino-cli core install arduino:avr
           arduino-cli lib install Servo
           tools/build_firmware.sh
+
+  simulator:
+    name: Web simulator
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: config.js matches config/*.json
+        run: python3 tools/gen_web_config.py --check
+      - name: Core tests (perft, kinematics vs MATLAB, planner)
+        run: node simulation/tests/test_core.mjs

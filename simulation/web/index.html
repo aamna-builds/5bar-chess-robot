@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>5-Bar Chess Robot · Live Simulator</title>
+<meta name="description" content="Play chess against a 5-bar parallel linkage robot in your browser. Watch the magnet route pieces between squares, drag the arm, and reshape the linkage to see where it loses control.">
+<meta name="theme-color" content="#0f172a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230f172a'/%3E%3Cpath d='M9 26 L7 15 L16 9 L25 15 L23 26' fill='none' stroke='%23e2e8f0' stroke-width='2.6' stroke-linejoin='round'/%3E%3Ccircle cx='16' cy='9' r='4' fill='%23f97316'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#0b1120; --panel:#111a2e; --card:#16213a; --line:#24324d; --ink:#e2e8f0; --muted:#8a9bb5;
+  --accent:#f97316; --accent-soft:rgba(249,115,22,.15); --good:#22c55e; --warn:#eab308; --bad:#ef4444;
+  --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:14px/1.45 var(--sans)}
+a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+header{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,#0f172a,#111a2e)}
+header .logo{width:30px;height:30px}
+header h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.2px}
+header .chip{font-size:11px;padding:3px 8px;border-radius:99px;background:var(--accent-soft);color:#fdba74;border:1px solid rgba(249,115,22,.5)}
+header .spacer{flex:1}
+header .gh{display:flex;align-items:center;gap:6px;color:var(--ink);font-size:13px;padding:6px 10px;border:1px solid var(--line);border-radius:8px}
+header .gh:hover{border-color:var(--accent);text-decoration:none}
+main{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:16px;padding:16px 20px;height:calc(100% - 57px)}
+#stage{position:relative;background:radial-gradient(ellipse at 50% 30%,#14213d 0%,#0b1120 70%);border:1px solid var(--line);border-radius:14px;overflow:hidden;min-height:420px}
+#cv{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:pointer}
+.overlay{position:absolute;left:14px;top:12px;display:flex;gap:8px;flex-wrap:wrap;pointer-events:none}
+.pill{background:rgba(15,23,42,.85);border:1px solid var(--line);border-radius:99px;padding:5px 12px;font-size:13px;backdrop-filter:blur(4px)}
+.pill b{color:#fdba74;font-weight:600}
+.legend{position:absolute;left:14px;bottom:12px;display:flex;gap:8px;flex-wrap:wrap}
+.toggle{display:flex;align-items:center;gap:6px;background:rgba(15,23,42,.85);border:1px solid var(--line);border-radius:8px;padding:5px 10px;font-size:12px;color:var(--muted);cursor:pointer;user-select:none}
+.toggle input{accent-color:var(--accent)}
+.ramp{position:absolute;right:14px;top:12px;background:rgba(15,23,42,.85);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:11px;color:var(--muted)}
+.ramp .bar{width:150px;height:8px;border-radius:4px;margin:4px 0 2px;background:linear-gradient(90deg,#ef4444 0%,#f97316 17%,#eab308 33%,#22c55e 66%,#14b8a6 100%)}
+.ramp .ticks{display:flex;justify-content:space-between}
+#promo{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,6,23,.55)}
+#promo .box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;text-align:center}
+#promo button{font-size:34px;width:58px;height:58px;margin:6px;border-radius:10px;background:#0f172a;color:var(--ink);border:1px solid var(--line);cursor:pointer}
+#promo button:hover{border-color:var(--accent)}
+aside{display:flex;flex-direction:column;gap:12px;overflow:auto;padding-right:2px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.card h2{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 10px;font-weight:600}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:#0f172a;border:1px solid var(--line);border-radius:10px;padding:3px}
+.seg button{border:0;background:transparent;color:var(--muted);padding:8px;border-radius:8px;font:inherit;font-weight:600;cursor:pointer}
+.seg button.on{background:var(--accent);color:#1b0c02}
+.row{display:flex;align-items:center;gap:8px;margin:7px 0}
+.row label{flex:0 0 92px;color:var(--muted);font-size:13px}
+.row select,.row input[type=range]{flex:1}
+.row output{flex:0 0 64px;text-align:right;font-family:var(--mono);font-size:12.5px}
+select{background:#0f172a;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit}
+input[type=range]{accent-color:var(--accent)}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.btn{background:#0f172a;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px 12px;font:inherit;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#1b0c02;font-weight:650}
+.btn.sel{border-color:var(--accent);color:#fdba74}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.stat{display:grid;grid-template-columns:repeat(2,1fr);gap:6px 14px;font-size:13px}
+.stat div{display:flex;justify-content:space-between;border-bottom:1px dashed #22314d;padding:2px 0}
+.stat span:first-child{color:var(--muted)}
+.stat span:last-child{font-family:var(--mono)}
+.meter{height:8px;border-radius:4px;background:#0f172a;border:1px solid var(--line);overflow:hidden;margin-top:8px}
+.meter i{display:block;height:100%;width:0;background:var(--good);transition:width .1s}
+.verdict{font-size:13px;margin-top:8px;padding:7px 10px;border-radius:8px;background:#0f172a;border:1px solid var(--line)}
+.verdict.good{border-color:rgba(34,197,94,.5);color:#86efac} .verdict.bad{border-color:rgba(239,68,68,.5);color:#fca5a5} .verdict.warn{border-color:rgba(234,179,8,.5);color:#fde047}
+#moves{font-family:var(--mono);font-size:12.5px;max-height:110px;overflow:auto;display:grid;grid-template-columns:30px 1fr 1fr;gap:1px 8px}
+#moves .n{color:var(--muted)}
+#plan{margin:8px 0 0;padding-left:18px;font-size:12.5px;color:var(--muted)}
+#plan li.now{color:#fdba74}
+#log{font-family:var(--mono);font-size:12px;height:118px;overflow:auto;background:#0a1222;border:1px solid var(--line);border-radius:8px;padding:6px 8px;color:#9fb3cf;white-space:pre}
+.hint{font-size:12.5px;color:var(--muted);margin:6px 0 0}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);opacity:0;background:#1e293b;border:1px solid var(--line);padding:9px 14px;border-radius:10px;transition:.25s;pointer-events:none;z-index:9}
+#toast.show{opacity:1;transform:translateX(-50%)}
+@media (max-width:900px){
+  .ramp{display:none}
+  main{grid-template-columns:1fr;height:auto}
+  #stage{height:68vh;min-height:360px}
+  header .chip{display:none}
+}
+</style>
+</head>
+<body>
+<header>
+  <svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#16213a"/><path d="M9 26 L7 15 L16 9 L25 15 L23 26" fill="none" stroke="#e2e8f0" stroke-width="2.6" stroke-linejoin="round"/><circle cx="16" cy="9" r="4" fill="#f97316"/></svg>
+  <h1>5-Bar Chess Robot</h1><span class="chip">live simulator</span>
+  <span class="spacer"></span>
+  <a class="gh" href="https://github.com/aamna-builds/5bar-chess-robot" target="_blank" rel="noopener">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+    Source
+  </a>
+</header>
+
+<main>
+  <section id="stage">
+    <canvas id="cv" aria-label="Top view of the robot and chessboard"></canvas>
+    <div class="overlay"><span class="pill" id="status">Loading…</span><span class="pill" id="sub" hidden></span></div>
+    <div class="legend">
+      <label class="toggle"><input type="checkbox" id="tHeat"> singularity map</label>
+      <label class="toggle"><input type="checkbox" id="tArms" checked> arms under board</label>
+      <label class="toggle"><input type="checkbox" id="tTrail" checked> magnet trail</label>
+    </div>
+    <div class="ramp" id="ramp" hidden>distance to singularity<div class="bar"></div><div class="ticks"><span>0°</span><span>20°</span><span>60°+</span></div></div>
+    <div id="promo"><div class="box"><div style="color:var(--muted);margin-bottom:4px">Promote to</div>
+      <button data-p="q">♛</button><button data-p="r">♜</button><button data-p="b">♝</button><button data-p="n">♞</button></div></div>
+  </section>
+
+  <aside>
+    <div class="seg" role="tablist">
+      <button id="mPlay" class="on" role="tab">♟ Play chess</button>
+      <button id="mDrive" role="tab">✥ Drive the arm</button>
+    </div>
+
+    <div class="card" id="cardPlay">
+      <h2>Game</h2>
+      <div class="row"><label for="opp">Opponent</label>
+        <select id="opp">
+          <option value="b">Robot plays Black</option>
+          <option value="w">Robot plays White</option>
+          <option value="none">Two players</option>
+          <option value="both">Robot vs robot</option>
+        </select></div>
+      <div class="row"><label for="lvl">Strength</label>
+        <select id="lvl"><option value="1">Casual</option><option value="2" selected>Club</option><option value="3">Thinking hard</option></select></div>
+      <div class="row"><label for="spd">Arm speed</label><input type="range" id="spd" min="0.5" max="8" step="0.5" value="2.5"><output id="spdO">2.5×</output></div>
+      <div class="btns"><button class="btn primary" id="newGame">New game</button><button class="btn" id="hintBtn">Suggest a move</button></div>
+      <p class="hint">Click a piece, then a square. Watch the magnet slide it along the lanes between squares, and park captured pieces at the side.</p>
+      <div id="moves" style="margin-top:8px"></div>
+      <ol id="plan"></ol>
+    </div>
+
+    <div class="card" id="cardDrive" hidden>
+      <h2>Drive</h2>
+      <p class="hint" style="margin-top:0">Drag anywhere on the stage. The magnet follows at the robot's real speed and refuses to enter the red zones near a singularity, like the firmware does.</p>
+      <div class="btns"><button class="btn" id="homeBtn">Home pose</button><button class="btn" id="sweepBtn">Trace board edge</button></div>
+    </div>
+
+    <div class="card">
+      <h2>Linkage geometry</h2>
+      <div class="btns" style="margin:0 0 6px"><button class="btn sel" id="pV2">v2 · optimised</button><button class="btn" id="pV1">v1 · as built</button></div>
+      <div class="row"><label for="gL1">Proximal L1</label><input type="range" id="gL1" min="180" max="320" step="5"><output id="gL1O"></output></div>
+      <div class="row"><label for="gL2">Distal L2</label><input type="range" id="gL2" min="200" max="380" step="5"><output id="gL2O"></output></div>
+      <div class="row"><label for="gD">Motor gap d</label><input type="range" id="gD" min="60" max="260" step="5"><output id="gDO"></output></div>
+      <div class="row"><label for="gY">Board offset</label><input type="range" id="gY" min="20" max="200" step="2.5"><output id="gYO"></output></div>
+      <div class="verdict" id="verdict">–</div>
+    </div>
+
+    <div class="card">
+      <h2>Telemetry</h2>
+      <div class="stat">
+        <div><span>x</span><span id="tx">–</span></div><div><span>y</span><span id="ty">–</span></div>
+        <div><span>θ left</span><span id="tl">–</span></div><div><span>θ right</span><span id="tr">–</span></div>
+        <div><span>steps L</span><span id="sl">–</span></div><div><span>steps R</span><span id="sr">–</span></div>
+        <div><span>transmission</span><span id="tt">–</span></div><div><span>elbow</span><span id="te">–</span></div>
+        <div><span>margin</span><span id="tm">–</span></div><div><span>magnet</span><span id="tg">–</span></div>
+      </div>
+      <div class="meter"><i id="mbar"></i></div>
+    </div>
+
+    <div class="card">
+      <h2>Serial to firmware</h2>
+      <div id="log"></div>
+    </div>
+  </aside>
+</main>
+<div id="toast"></div>
+
+<script src="config.js"></script>
+<script src="core.js"></script>
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+const DEG = Math.PI / 180;
+const GLYPH = { K: '♚', Q: '♛', R: '♜', B: '♝', N: '♞', P: '♟' };
+
+// ---------------------------------------------------------------- state
+const S = {
+  preset: 'v2', R: null, pos: null, planner: null,
+  eff: [0, 0], mag: false, trail: [],
+  pieces: [],            // visual pieces {pc, p:[x,y]}
+  queue: [], cur: null,  // motion queue
+  busy: false, sel: null, targets: [], lastMove: null, history: [],
+  mode: 'play', driveTarget: null, heat: null, heatKey: '', over: null, pendingPromo: null,
+};
+
+function cfgFor(preset) { return FB_CONFIGS[preset === 'v1' ? 'v1' : 'v2']; }
+
+function buildRobot(over) {
+  S.R = FB.makeRobot(cfgFor(S.preset), over);
+  for (const [k, id] of [['L1', 'gL1'], ['L2', 'gL2'], ['d', 'gD'], ['y0', 'gY']]) {
+    $(id).value = S.R[k]; $(id + 'O').textContent = S.R[k] + ' mm';
+  }
+  S.heatKey = '';
+  updateVerdict();
+}
+
+function updateVerdict() {
+  const R = S.R; let unsafe = 0, worst = Infinity, worstSq = '', unreachable = 0;
+  for (let i = 0; i < 64; i++) {
+    const n = FB.sqName(i), q = R.quality(R.squareXY(n));
+    if (!q.ok) { unreachable++; continue; }
+    if (q.margin < 20) unsafe++;
+    if (q.margin < worst) { worst = q.margin; worstSq = n; }
+  }
+  const corners = [[-R.half, R.y0], [R.half, R.y0], [-R.half, R.y0 + 8 * R.sq], [R.half, R.y0 + 8 * R.sq]];
+  const cornersOut = corners.filter((p) => !R.ik(p)).length;
+  const v = $('verdict');
+  if (unreachable) { v.className = 'verdict bad'; v.textContent = `${unreachable} squares are out of reach. Try longer links or move the board closer.`; return; }
+  const cls = unsafe === 0 ? 'good' : unsafe < 12 ? 'warn' : 'bad';
+  v.className = 'verdict ' + cls;
+  v.innerHTML = `Worst square <b>${worstSq}</b>: ${worst.toFixed(1)}° from a singularity · <b>${unsafe}</b>/64 squares under 20°` +
+    (cornersOut ? ` · ${cornersOut} board corner${cornersOut > 1 ? 's' : ''} out of reach` : '');
+}
+
+// ---------------------------------------------------------------- game
+function newGame(msg) {
+  S.pos = FB.Position.fromFen();
+  S.planner = new FB.Planner(S.R);
+  S.queue = []; S.cur = null; S.busy = false; S.sel = null; S.targets = []; S.lastMove = null;
+  S.history = []; S.over = null; S.trail = [];
+  S.eff = S.R.home(); S.mag = false;
+  syncPieces(); renderMoves(); $('plan').innerHTML = '';
+  logLine('Z', 'arms in home pose');
+  setStatus();
+  if (msg) toast(msg);
+  setTimeout(maybeRobot, 400);
+}
+
+function syncPieces() {
+  S.pieces = [];
+  S.pos.board.forEach((pc, i) => { if (pc) S.pieces.push({ pc, p: S.R.squareXY(FB.sqName(i)) }); });
+  for (const q of S.planner.parked) S.pieces.push({ pc: q.piece, p: q.p.slice() });
+}
+
+function robotSide() {
+  const o = $('opp').value;
+  if (o === 'none') return null;
+  if (o === 'both') return S.pos.white ? 'w' : 'b';
+  return o;
+}
+const humanTurn = () => { const r = robotSide(); return S.mode === 'play' && !S.over && !S.busy && (r === null || r !== (S.pos.white ? 'w' : 'b')); };
+
+function setStatus(extra) {
+  let t;
+  if (S.over) t = `<b>${S.over}</b>`;
+  else if (S.busy) t = `Robot moving <b>${extra || ''}</b>`;
+  else if (S.mode === 'drive') t = 'Drive mode: <b>drag the magnet</b>';
+  else {
+    const side = S.pos.white ? 'White' : 'Black';
+    t = `${side} to move${S.pos.inCheck() ? ' · <b>check!</b>' : ''}` + (humanTurn() ? '' : ' · <b>robot thinking…</b>');
+  }
+  $('status').innerHTML = t;
+}
+
+function maybeRobot() {
+  if (S.mode !== 'play' || S.over || S.busy) return;
+  const r = robotSide();
+  if (r === null || r !== (S.pos.white ? 'w' : 'b')) { setStatus(); return; }
+  setStatus();
+  setTimeout(() => {
+    if (S.busy || S.over || S.mode !== 'play') return;
+    const mv = FB.bestMove(S.pos, +$('lvl').value);
+    if (mv) playMove(mv);
+  }, 250);
+}
+
+function playMove(mv) {
+  const before = S.pos.copy();
+  let plan;
+  try { plan = S.planner.plan(S.pos, mv); }
+  catch (e) { toast('Cannot do that: ' + e.message); setStatus(); return; }
+  S.history.push({ uci: plan.move, san: sanOf(before, plan) });
+  S.lastMove = plan.info.move; S.sel = null; S.targets = [];
+  renderMoves();
+  const ol = $('plan'); ol.innerHTML = '';
+  plan.transfers.forEach((t) => { const li = document.createElement('li'); li.textContent = t.label; ol.appendChild(li); });
+  plan.notes.forEach((n) => { const li = document.createElement('li'); li.textContent = n; ol.appendChild(li); });
+  // queue: for each transfer -> M0, travel, M1, carry, M0
+  plan.transfers.forEach((t, k) => {
+    S.queue.push({ kind: 'mag', on: false });
+    S.queue.push({ kind: 'move', w: [null, t.waypoints[0]], carry: false, k });
+    S.queue.push({ kind: 'mag', on: true });
+    S.queue.push({ kind: 'move', w: t.waypoints, carry: true, k, label: t.label });
+    S.queue.push({ kind: 'mag', on: false });
+  });
+  S.queue.push({ kind: 'done' });
+  S.busy = true; S.trail = [];
+  setStatus(plan.transfers[plan.transfers.length - 1].label);
+}
+
+function sanOf(before, plan) {
+  const i = plan.info, m = i.move, p = i.piece.toUpperCase();
+  const to = FB.sqName(m.to);
+  if (i.rookFrom !== null) return m.to > m.from ? 'O-O' : 'O-O-O';
+  let s = (p === 'P' ? (i.captured ? FB.sqName(m.from)[0] : '') : p) + (i.captured ? 'x' : '') + to;
+  if (i.promoted) s += '=' + i.promoted.toUpperCase();
+  const after = before.copy(); after._apply(m);
+  if (after.inCheck()) s += after.legal().length ? '+' : '#';
+  return s;
+}
+
+function renderMoves() {
+  const el = $('moves'); el.innerHTML = '';
+  for (let k = 0; k < S.history.length; k += 2) {
+    el.insertAdjacentHTML('beforeend', `<span class="n">${k / 2 + 1}.</span><span>${S.history[k].san}</span><span>${S.history[k + 1] ? S.history[k + 1].san : ''}</span>`);
+  }
+  el.scrollTop = el.scrollHeight;
+}
+
+// ---------------------------------------------------------------- motion
+function speed() { return +$('spd').value; }
+
+function step(dt) {
+  if (S.mode === 'drive') return driveStep(dt);
+  if (!S.cur && S.queue.length) startOp(S.queue.shift());
+  const op = S.cur;
+  if (!op) return;
+  op.t += dt * speed();
+  if (op.kind === 'mag') {
+    if (op.t >= 0.25) S.cur = null;
+  } else if (op.kind === 'move') {
+    S.eff = op.traj.at(Math.min(op.t, op.traj.T));
+    if (op.carry && op.piece) op.piece.p = S.eff.slice();
+    if (S.mag) { S.trail.push(S.eff.slice()); if (S.trail.length > 1500) S.trail.shift(); }
+    if (op.t >= op.traj.T) S.cur = null;
+  }
+}
+
+function startOp(op) {
+  op.t = 0;
+  if (op.kind === 'mag') {
+    S.mag = op.on; logLine(op.on ? 'M1' : 'M0', op.on ? 'magnet up' : 'magnet down');
+  } else if (op.kind === 'move') {
+    const w = op.w.slice(); w[0] = S.eff.slice();
+    op.traj = FB.trajectory(w, S.R.vmax, S.R.amax);
+    if (op.carry) {
+      op.piece = S.pieces.find((q) => FB.dist(q.p, w[0]) < 1.5) || null;
+      w.slice(1).forEach((p) => logLine(`G ${p[0].toFixed(2)} ${p[1].toFixed(2)}`));
+      const items = $('plan').children;
+      for (let i = 0; i < items.length; i++) items[i].classList.toggle('now', i === op.k);
+    } else {
+      if (op.traj.T < 1e-6) { S.cur = null; return; }
+      logLine(`G ${w[1][0].toFixed(2)} ${w[1][1].toFixed(2)}`, 'travel');
+    }
+  } else if (op.kind === 'done') {
+    S.busy = false; syncPieces();
+    for (const li of $('plan').children) li.classList.remove('now');
+    S.over = S.pos.outcome();
+    if (S.over) S.over = S.over === 'checkmate' ? `Checkmate · ${S.pos.white ? 'Black' : 'White'} wins` : `Draw · ${S.over}`;
+    setStatus();
+    S.cur = null;
+    setTimeout(maybeRobot, 350);
+    return;
+  }
+  S.cur = op;
+}
+
+// drive mode: follow the pointer, never entering unsafe space
+function driveStep(dt) {
+  const tgt = S.driveTarget; if (!tgt) return;
+  const v = S.R.vmax * speed();
+  const d = FB.dist(S.eff, tgt); if (d < 0.05) return;
+  const s = Math.min(d, v * dt);
+  const nxt = [S.eff[0] + (tgt[0] - S.eff[0]) * s / d, S.eff[1] + (tgt[1] - S.eff[1]) * s / d];
+  if (S.R.isSafe(nxt)) { S.eff = nxt; S.blocked = false; }
+  else S.blocked = true;
+}
+
+// ---------------------------------------------------------------- serial log
+const LOG = [];
+function logLine(cmd, note) {
+  LOG.push(cmd.padEnd(18) + (note ? '; ' + note : ''));
+  if (LOG.length > 200) LOG.shift();
+  const el = $('log'); el.textContent = LOG.join('\n'); el.scrollTop = el.scrollHeight;
+}
+
+// ---------------------------------------------------------------- drawing
+const cv = $('cv'), ctx = cv.getContext('2d');
+let VIEW = { s: 1, ox: 0, oy: 0 };
+function resize() {
+  const r = cv.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const R = S.R, xm = R.half + R.graveOff + 50, ytop = R.y0 + 8 * R.sq + 30, ybot = -Math.min(170, R.L1 * 0.7);
+  const s = Math.min(r.width / (2 * xm), (r.height - 40) / (ytop - ybot));
+  VIEW = { s, ox: r.width / 2, oy: (r.height + (ytop - ybot) * s) / 2 + ybot * s + 8, w: r.width, h: r.height };
+}
+const X = (p) => VIEW.ox + p[0] * VIEW.s, Y = (p) => VIEW.oy - p[1] * VIEW.s;
+const toWorld = (sx, sy) => [(sx - VIEW.ox) / VIEW.s, (VIEW.oy - sy) / VIEW.s];
+
+function heatColor(m) {
+  const stops = [[0, [239, 68, 68]], [10, [249, 115, 22]], [20, [234, 179, 8]], [40, [34, 197, 94]], [60, [20, 184, 166]]];
+  if (m >= 60) return stops[4][1];
+  for (let i = 0; i < 4; i++) if (m <= stops[i + 1][0]) {
+    const t = (m - stops[i][0]) / (stops[i + 1][0] - stops[i][0]);
+    return stops[i][1].map((c, k) => Math.round(c + t * (stops[i + 1][1][k] - c)));
+  }
+}
+function heatmap() {
+  const key = [S.R.L1, S.R.L2, S.R.d, S.R.y0, VIEW.w, VIEW.h].join();
+  if (S.heatKey === key) return S.heat;
+  const R = S.R, tl = toWorld(0, 0), br = toWorld(VIEW.w, VIEW.h);
+  const x0 = tl[0], x1 = br[0], y0 = br[1], y1 = tl[1];
+  const step = Math.max(3, (x1 - x0) / 220);
+  const nx = Math.ceil((x1 - x0) / step), ny = Math.ceil((y1 - y0) / step);
+  const off = document.createElement('canvas'); off.width = nx; off.height = ny;
+  const g = off.getContext('2d'), img = g.createImageData(nx, ny);
+  for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+    const q = R.quality([x0 + (i + 0.5) * step, y1 - (j + 0.5) * step]);
+    const k = 4 * (j * nx + i);
+    if (!q.ok) { img.data[k + 3] = 0; continue; }
+    const c = heatColor(q.margin);
+    img.data[k] = c[0]; img.data[k + 1] = c[1]; img.data[k + 2] = c[2]; img.data[k + 3] = 120;
+  }
+  g.putImageData(img, 0, 0);
+  S.heat = { off, x0, y1, w: nx * step, h: ny * step }; S.heatKey = key;
+  return S.heat;
+}
+
+function draw() {
+  const R = S.R, sq = R.sq * VIEW.s;
+  ctx.clearRect(0, 0, VIEW.w, VIEW.h);
+
+  if ($('tHeat').checked) {
+    const H = heatmap();
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(H.off, X([H.x0, 0]), Y([0, H.y1]), H.w * VIEW.s, H.h * VIEW.s);
+  }
+
+  // table edge + motor mounts
+  ctx.strokeStyle = 'rgba(148,163,184,.18)'; ctx.lineWidth = 1;
+  ctx.setLineDash([4, 6]); ctx.beginPath(); ctx.moveTo(X([-R.half - 60, 0]), Y([0, 0])); ctx.lineTo(X([R.half + 60, 0]), Y([0, 0])); ctx.stroke(); ctx.setLineDash([]);
+
+  const q = R.quality(S.eff);
+  const th = q.ok ? q.th : R.ik(S.eff);
+  const arms = th && $('tArms').checked;
+  if (arms) drawArms(th, q);
+
+  // acrylic board
+  for (let i = 0; i < 64; i++) {
+    const n = FB.sqName(i), p = R.squareXY(n);
+    const dark = (i % 8 + (i >> 3)) % 2 === 0;
+    ctx.fillStyle = dark ? 'rgba(100,116,139,0.62)' : 'rgba(203,213,225,0.50)';
+    ctx.fillRect(X(p) - sq / 2, Y(p) - sq / 2, sq, sq);
+  }
+  // highlights
+  if (S.lastMove) for (const s of [S.lastMove.from, S.lastMove.to]) {
+    const p = R.squareXY(FB.sqName(s)); ctx.fillStyle = 'rgba(249,115,22,.28)'; ctx.fillRect(X(p) - sq / 2, Y(p) - sq / 2, sq, sq);
+  }
+  if (S.pos && S.pos.inCheck()) {
+    const p = R.squareXY(FB.sqName(S.pos.kingSq(S.pos.white)));
+    const g = ctx.createRadialGradient(X(p), Y(p), 2, X(p), Y(p), sq * 0.7);
+    g.addColorStop(0, 'rgba(239,68,68,.75)'); g.addColorStop(1, 'rgba(239,68,68,0)');
+    ctx.fillStyle = g; ctx.fillRect(X(p) - sq / 2, Y(p) - sq / 2, sq, sq);
+  }
+  if (S.sel !== null) {
+    const p = R.squareXY(FB.sqName(S.sel)); ctx.strokeStyle = '#f97316'; ctx.lineWidth = 2.5; ctx.strokeRect(X(p) - sq / 2 + 1.5, Y(p) - sq / 2 + 1.5, sq - 3, sq - 3);
+  }
+  ctx.strokeStyle = 'rgba(226,232,240,.55)'; ctx.lineWidth = 1.4;
+  const c0 = [-R.half, R.y0 + 8 * R.sq];
+  ctx.strokeRect(X(c0), Y(c0), 8 * sq, 8 * sq);
+  // coordinates
+  ctx.fillStyle = 'rgba(148,163,184,.85)'; ctx.font = `${Math.max(9, sq * 0.22)}px system-ui,sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (let f = 0; f < 8; f++) { const p = R.squareXY('abcdefgh'[f] + '1'); ctx.fillText('abcdefgh'[f], X(p), Y([0, R.y0 + 8 * R.sq]) - 10); }
+  for (let r = 1; r <= 8; r++) { const p = R.squareXY('h' + r); ctx.fillText(String(r), X([-R.half, 0]) - 10, Y(p)); }
+
+  // graveyard slots
+  ctx.strokeStyle = 'rgba(148,163,184,.25)'; ctx.lineWidth = 1;
+  for (const w of [true, false]) for (const p of S.planner.slots[w]) { ctx.beginPath(); ctx.arc(X(p), Y(p), R.pieceDia / 2 * VIEW.s, 0, 7); ctx.stroke(); }
+
+  // trail
+  if ($('tTrail').checked && S.trail.length > 1) {
+    ctx.strokeStyle = 'rgba(249,115,22,.75)'; ctx.lineWidth = 2; ctx.setLineDash([5, 4]);
+    ctx.beginPath(); S.trail.forEach((p, i) => (i ? ctx.lineTo(X(p), Y(p)) : ctx.moveTo(X(p), Y(p)))); ctx.stroke(); ctx.setLineDash([]);
+  }
+
+  // legal targets
+  for (const t of S.targets) {
+    const p = R.squareXY(FB.sqName(t)); const cap = S.pos.board[t];
+    ctx.fillStyle = 'rgba(249,115,22,.55)'; ctx.beginPath();
+    if (cap) { ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(249,115,22,.8)'; ctx.arc(X(p), Y(p), sq * 0.42, 0, 7); ctx.stroke(); }
+    else { ctx.arc(X(p), Y(p), sq * 0.14, 0, 7); ctx.fill(); }
+  }
+
+  // magnet (under the board, drawn semi-transparent)
+  const ex = X(S.eff), ey = Y(S.eff);
+  if (S.mag) {
+    const g = ctx.createRadialGradient(ex, ey, 2, ex, ey, sq * 0.75);
+    g.addColorStop(0, 'rgba(249,115,22,.85)'); g.addColorStop(1, 'rgba(249,115,22,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(ex, ey, sq * 0.75, 0, 7); ctx.fill();
+  }
+
+  // pieces
+  const FONT = '"DejaVu Sans","Segoe UI Symbol","Noto Sans Symbols2","Apple Symbols",serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (const pc of S.pieces) {
+    const inGrave = Math.abs(pc.p[0]) > R.half + 1 && !(S.cur && S.cur.piece === pc);
+    ctx.font = `${sq * (inGrave ? 0.5 : 0.8)}px ${FONT}`;
+    const w = pc.pc === pc.pc.toUpperCase(), g = GLYPH[pc.pc.toUpperCase()] + '︎';
+    const x = X(pc.p), y = Y(pc.p) + sq * 0.04;
+    ctx.lineWidth = Math.max(1.5, sq * 0.05); ctx.lineJoin = 'round';
+    ctx.strokeStyle = w ? '#0f172a' : '#e2e8f0'; ctx.strokeText(g, x, y);
+    ctx.fillStyle = w ? '#f8fafc' : '#0b1120'; ctx.fillText(g, x, y);
+  }
+
+  // magnet marker on top
+  ctx.lineWidth = 2.5; ctx.strokeStyle = S.mag ? '#f97316' : 'rgba(226,232,240,.75)';
+  ctx.beginPath(); ctx.arc(ex, ey, Math.max(5, sq * 0.13), 0, 7); ctx.stroke();
+  if (S.mode === 'drive' && S.driveTarget) {
+    const tx = X(S.driveTarget), ty = Y(S.driveTarget);
+    ctx.strokeStyle = S.blocked ? '#ef4444' : 'rgba(226,232,240,.6)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(tx - 8, ty); ctx.lineTo(tx + 8, ty); ctx.moveTo(tx, ty - 8); ctx.lineTo(tx, ty + 8); ctx.stroke();
+    if (S.blocked) {
+      const msg = 'blocked: too close to a singularity';
+      ctx.font = '600 12px system-ui,sans-serif'; const w = ctx.measureText(msg).width + 16;
+      ctx.fillStyle = 'rgba(127,29,29,.92)'; ctx.beginPath();
+      ctx.roundRect ? ctx.roundRect(ex - w / 2, ey - 40, w, 22, 11) : ctx.rect(ex - w / 2, ey - 40, w, 22); ctx.fill();
+      ctx.fillStyle = '#fee2e2'; ctx.fillText(msg, ex, ey - 29);
+    }
+  }
+  updateTelemetry(q);
+}
+
+function drawArms(th, q) {
+  const R = S.R, [b1, b2] = R.elbows(th);
+  const col = q.ok && q.margin < 10 ? '#ef4444' : q.ok && q.margin < 20 ? '#eab308' : '#cbd5e1';
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  // proximal links (thicker, printed parts)
+  ctx.strokeStyle = 'rgba(241,245,249,.92)'; ctx.lineWidth = Math.max(6, 22 * VIEW.s);
+  ctx.beginPath(); ctx.moveTo(X(R.m1), Y(R.m1)); ctx.lineTo(X(b1), Y(b1)); ctx.moveTo(X(R.m2), Y(R.m2)); ctx.lineTo(X(b2), Y(b2)); ctx.stroke();
+  // distal links (acrylic)
+  ctx.strokeStyle = col; ctx.globalAlpha = 0.8; ctx.lineWidth = Math.max(5, 16 * VIEW.s);
+  ctx.beginPath(); ctx.moveTo(X(b1), Y(b1)); ctx.lineTo(X(S.eff), Y(S.eff)); ctx.lineTo(X(b2), Y(b2)); ctx.stroke(); ctx.globalAlpha = 1;
+  for (const p of [b1, b2]) { ctx.fillStyle = '#0f172a'; ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(X(p), Y(p), Math.max(4, 9 * VIEW.s), 0, 7); ctx.fill(); ctx.stroke(); }
+  for (const m of [R.m1, R.m2]) {
+    const s = Math.max(14, 44 * VIEW.s);
+    ctx.fillStyle = '#334155'; ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(X(m) - s / 2, Y(m) - s / 2, s, s, 4) : ctx.rect(X(m) - s / 2, Y(m) - s / 2, s, s); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#e2e8f0'; ctx.beginPath(); ctx.arc(X(m), Y(m), Math.max(3, 6 * VIEW.s), 0, 7); ctx.fill();
+  }
+}
+
+let lastTel = 0;
+function updateTelemetry(q) {
+  const now = performance.now(); if (now - lastTel < 80) return; lastTel = now;
+  const R = S.R;
+  $('tx').textContent = S.eff[0].toFixed(1) + ' mm'; $('ty').textContent = S.eff[1].toFixed(1) + ' mm';
+  if (q.ok) {
+    $('tl').textContent = (q.th[0] / DEG).toFixed(2) + '°'; $('tr').textContent = (q.th[1] / DEG).toFixed(2) + '°';
+    const st = R.steps(q.th); $('sl').textContent = st[0]; $('sr').textContent = st[1];
+    $('tt').textContent = q.trans.toFixed(1) + '°'; $('te').textContent = q.elbow.toFixed(1) + '°';
+    $('tm').textContent = q.margin.toFixed(1) + '°';
+    const b = $('mbar'); b.style.width = Math.min(100, q.margin / 60 * 100) + '%';
+    b.style.background = q.margin < 10 ? 'var(--bad)' : q.margin < 20 ? 'var(--warn)' : 'var(--good)';
+  }
+  $('tg').textContent = S.mag ? 'ENGAGED' : 'off';
+}
+
+// ---------------------------------------------------------------- input
+function squareFromEvent(e) {
+  const r = cv.getBoundingClientRect();
+  const w = toWorld(e.clientX - r.left, e.clientY - r.top);
+  return { w, sq: S.R.squareAt(w) };
+}
+cv.addEventListener('pointerdown', (e) => {
+  const { w, sq } = squareFromEvent(e);
+  if (S.mode === 'drive') { S.driveTarget = w; cv.setPointerCapture(e.pointerId); S.dragging = true; return; }
+  if (!humanTurn() || !sq) return;
+  const idx = FB.sqIndex(sq), pc = S.pos.board[idx];
+  if (S.sel !== null && S.targets.includes(idx)) {
+    const from = S.sel;
+    const promo = S.pos.board[from].toUpperCase() === 'P' && (sq[1] === '8' || sq[1] === '1');
+    if (promo) { S.pendingPromo = FB.sqName(from) + sq; $('promo').style.display = 'flex'; return; }
+    playMove(FB.sqName(from) + sq); return;
+  }
+  if (pc && FB.isW(pc) === S.pos.white) {
+    S.sel = idx; S.targets = S.pos.legal().filter((m) => m.from === idx).map((m) => m.to);
+  } else { S.sel = null; S.targets = []; }
+});
+cv.addEventListener('pointermove', (e) => { if (S.mode === 'drive' && S.dragging) S.driveTarget = squareFromEvent(e).w; });
+cv.addEventListener('pointerup', () => { S.dragging = false; });
+$('promo').addEventListener('click', (e) => {
+  const p = e.target.dataset && e.target.dataset.p; if (!p) return;
+  $('promo').style.display = 'none'; playMove(S.pendingPromo + p); S.pendingPromo = null;
+});
+
+function setMode(m) {
+  if (m === S.mode) return;
+  if (S.busy) { toast('Wait for the robot to finish its move'); return; }
+  S.mode = m;
+  $('mPlay').classList.toggle('on', m === 'play'); $('mDrive').classList.toggle('on', m === 'drive');
+  $('cardPlay').hidden = m !== 'play'; $('cardDrive').hidden = m !== 'drive';
+  S.sel = null; S.targets = []; S.driveTarget = null; S.mag = false;
+  if (m === 'drive') { $('tHeat').checked = true; $('ramp').hidden = false; logLine('M0'); }
+  else { S.eff = S.R.home(); logLine('H', 'back to home pose'); setTimeout(maybeRobot, 300); }
+  setStatus();
+}
+$('mPlay').onclick = () => setMode('play');
+$('mDrive').onclick = () => setMode('drive');
+$('tHeat').onchange = () => { $('ramp').hidden = !$('tHeat').checked; };
+$('spd').oninput = () => { $('spdO').textContent = $('spd').value + '×'; };
+$('newGame').onclick = () => newGame('New game');
+$('opp').onchange = () => { setStatus(); maybeRobot(); };
+$('hintBtn').onclick = () => {
+  if (!humanTurn()) return;
+  const mv = FB.bestMove(S.pos, 2); if (!mv) return;
+  S.sel = FB.sqIndex(mv.slice(0, 2)); S.targets = [FB.sqIndex(mv.slice(2, 4))];
+  toast('Suggestion: ' + mv);
+};
+$('homeBtn').onclick = () => { S.driveTarget = S.R.home(); logLine('H', 'home pose'); };
+$('sweepBtn').onclick = () => {
+  const R = S.R, pts = [[-R.half, R.y0], [R.half, R.y0], [R.half, R.y0 + 8 * R.sq], [-R.half, R.y0 + 8 * R.sq], [-R.half, R.y0]];
+  let i = 0; const go = () => { if (S.mode !== 'drive' || i >= pts.length) return; S.driveTarget = pts[i++]; logLine(`G ${S.driveTarget[0].toFixed(2)} ${S.driveTarget[1].toFixed(2)}`); setTimeout(go, 2600 / speed()); };
+  go();
+};
+
+function geometryChanged(preset) {
+  if (S.busy) { toast('Wait for the robot to finish its move'); buildRobot({ L1: S.R.L1, L2: S.R.L2, d: S.R.d, y0: S.R.y0 }); return; }
+  if (preset) { S.preset = preset; buildRobot(); }
+  else buildRobot({ L1: +$('gL1').value, L2: +$('gL2').value, d: +$('gD').value, y0: +$('gY').value });
+  $('pV2').classList.toggle('sel', preset === 'v2'); $('pV1').classList.toggle('sel', preset === 'v1');
+  resize();
+  newGame(preset ? (preset === 'v1' ? 'v1 as built: watch the near ranks' : 'v2 optimised geometry') : 'Geometry changed · new game');
+}
+$('pV2').onclick = () => geometryChanged('v2');
+$('pV1').onclick = () => geometryChanged('v1');
+for (const id of ['gL1', 'gL2', 'gD', 'gY']) {
+  $(id).oninput = () => { $(id + 'O').textContent = $(id).value + ' mm'; };
+  $(id).onchange = () => geometryChanged(null);
+}
+
+let toastT;
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2400); }
+
+// ---------------------------------------------------------------- loop
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  step(dt); draw();
+  requestAnimationFrame(frame);
+}
+buildRobot();
+window.addEventListener('resize', resize);
+newGame();
+resize();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
