@@ -5,12 +5,9 @@
 #include "stockfish.h"
 #include "ui.h"
 #include "state.h"
+#include "serialib.h"
 
-struct Vector2i
-{
-    int x;
-    int y;
-};
+extern serialib arduino;
 
 struct Move
 {
@@ -35,7 +32,7 @@ static const char* glyphs[128] =
     ['p'] = "♟"
 };
 
-int squareSize = 48;
+int squareSize = 50;
 int fontSize = 35;
 
 int boardSize = 8 * squareSize;
@@ -44,6 +41,7 @@ int offsetY = (HEIGHT - boardSize) / 2;
 
 float stepSize = 3.0f;
 
+DemoState demoState;
 std::vector<std::string> moves;
 std::vector<PieceOut> pieceOut;
 
@@ -138,6 +136,14 @@ std::vector<Vector2> GetEdgePath(const std::vector<char>& dirs, Move m)
     vec.end());
 
     return vec;
+}
+
+void ToggleMagnet()
+{
+    if (arduino.isDeviceOpen())
+    {
+        arduino.writeString("M\n");
+    }
 }
 
 float SegmentLength(Vector2 a, Vector2 b)
@@ -255,7 +261,16 @@ std::string GetEngineMove(const std::vector<std::string>& moves)
 
 void MakeMove(Move m, bool undo)
 {
-    std::vector<Vector2> edgePath = GetEdgePath(GenerateDirs(m), m);
+    Move t = {
+        {simState.accPos.x, simState.accPos.y},
+        {m.from.x, m.from.y}
+    };
+    std::vector<Vector2> edgePath = GetEdgePath(GenerateDirs(t), t);
+
+    // simState.latchQueue.push_back(false);
+    // simState.moveQueue.push_back(BuildEasedPath(edgePath, ceil(PathLength(edgePath) / stepSize)));
+
+    edgePath = GetEdgePath(GenerateDirs(m), m);
 
     simState.latchQueue.push_back(true);
     simState.moveQueue.push_back(BuildEasedPath(edgePath, ceil(PathLength(edgePath) / stepSize)));
@@ -300,6 +315,98 @@ void PlayerTurn(const std::string& playerMove)
     
 }
 
+void QueueLatchOnly(bool latch)
+{
+    Move m = {
+        {simState.accPos.x, simState.accPos.y},
+        {simState.accPos.x, simState.accPos.y}
+    };
+
+    std::vector<Vector2> edgePath = GetEdgePath(GenerateDirs(m), m);
+
+    simState.latchQueue.push_back(latch);
+    simState.moveQueue.push_back(
+        BuildEasedPath(edgePath, 1)
+    );
+}
+
+void DemoMove(int fx, int fy, int tx, int ty)
+{
+    Move m;
+    m.from.x = fx;
+    m.from.y = fy;
+    m.to.x = tx;
+    m.to.y = ty;
+
+    MakeMove(m, false);
+}
+
+void RunDemo()
+{
+    if (demoState.stage != DemoStage::Running) return;
+
+    demoState.timer += GetFrameTime();
+
+    if (!simState.moveQueue.empty()) return;
+    if (demoState.timer < 2.0f) return;
+
+    demoState.timer = 0.0f;
+
+    switch (demoState.step)
+    {
+        // move to black pawn e7
+        case 0:
+            DemoMove(4, 4, 4, 1); // assume starting near center
+            break;
+
+        // magnet ON
+        case 1:
+            QueueLatchOnly(true);
+            break;
+
+        // pawn e7 → e5
+        case 2:
+            DemoMove(4, 1, 4, 3);
+            break;
+
+        // magnet OFF
+        case 3:
+            QueueLatchOnly(false);
+            break;
+
+        // move to knight g1
+        case 4:
+            DemoMove(4, 3, 6, 7);
+            break;
+
+        // magnet ON
+        case 5:
+            QueueLatchOnly(true);
+            break;
+
+        // knight g1 → f3
+        case 6:
+            DemoMove(6, 7, 5, 5);
+            break;
+
+        // magnet OFF
+        case 7:
+            QueueLatchOnly(false);
+            break;
+
+        // move to center e4
+        case 8:
+            DemoMove(5, 5, 4, 4);
+            break;
+
+        case 9:
+            demoState.stage = DemoStage::Done;
+            break;
+    }
+
+    demoState.step++;
+}
+
 void DrawMoveList()
 {
     const int fontSize = 14;
@@ -329,7 +436,14 @@ void UpdateChess(void)
     {
         if (IsKeyPressed(KEY_SPACE)) EngineTurn();
         else if (IsKeyPressed(KEY_C)) Undo();
+
+        if (IsKeyPressed(KEY_M))
+        {
+            ToggleMagnet();
+        }
     }
+
+    // RunDemo(); // if present
 }
 
  void DrawChess(void)

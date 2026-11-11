@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(RAYLIB_PATH "${CMAKE_SOURCE_DIR}/lib/raylib")
+set(SERIAL_PATH "${CMAKE_SOURCE_DIR}/lib/serial")
 
 add_executable(${PROJECT_NAME}
     src/main.cpp
@@ -12,12 +13,16 @@ add_executable(${PROJECT_NAME}
     src/chess.cpp 
     src/stockfish.cpp
     src/ui.cpp
+    lib/serial/serialib.cpp
 )
 
 file(COPY assets DESTINATION ${CMAKE_BINARY_DIR})
 
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${RAYLIB_PATH}/include
+)
+target_include_directories(${PROJECT_NAME} PRIVATE
+    ${SERIAL_PATH}
 )
 
 if (APPLE)

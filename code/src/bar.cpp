@@ -5,23 +5,44 @@
 #include "chess.h"
 #include "ui.h"
 #include "state.h"
+#include "serialib.h"
+
+extern serialib arduino;
+ManualControl manualControl;
 
 const float EP = 1e-6f;
 
-float L1 = 240;
-float L2 = 240;
+float L1 = 250;
+float L2 = 290;
 float L3 = L2;
 float L4 = L1;
-float L5 = 135;
+float L5 = 165;
 
 float R1 = L1 + L2;
 float R2 = L3 + L4;
 
-Vector2 A = {(WIDTH - L5) / 2.0f, HEIGHT / 6.0f};
+// Vector2 A = {(WIDTH - L5) / 2.0f, HEIGHT / 2.0f - L1 / 2.0f};
+// Vector2 B = {A.x, A.y + L1};
+
+// Vector2 E = {A.x + L5, A.y};
+// Vector2 D = {A.x + L5, A.y + L4};
+
+// Vector2 C = {
+//     A.x + L5 / 2.0f,
+//     A.y + L1 + sqrt(L2 * L2 - (L5 * L5) / 4.0f)
+// };
+
+Vector2 A = {(WIDTH - L5) / 2.0f, HEIGHT / 8.0f};
 Vector2 B = {A.x, A.y + L1};
 Vector2 C = {A.x + L5 / 2.0f, A.y + L4 + sqrt(L2 * L2 - L5 * L5 / 4.0f)};
 Vector2 D = {A.x + L5, A.y + L4};
 Vector2 E = {A.x + L5, A.y};
+
+// Vector2 A = {(WIDTH - L5) / 2.0f, HEIGHT / 2.0f};
+// Vector2 B = {A.x, A.y + L1};
+// Vector2 C = {A.x + L5 / 2.0f, A.y};
+// Vector2 D = {A.x + L5, A.y + L4};
+// Vector2 E = {A.x + L5, A.y};
 
 std::vector<Vector2*> point = {&A, &B, &C, &D, &E};
 
@@ -33,6 +54,76 @@ auto Dist = [](Vector2 a, Vector2 b)
     float dy = a.y - b.y;
     return sqrt(dx * dx + dy * dy);
 };
+
+// void ModelIK(Vector2 mPos)
+// {    
+//     float rx, ry, d, a, b, t, cd;
+//     static bool flip = false;
+//     const float accuracyEpsilon = 5.0f;
+
+//     float distToLine = mPos.y - A.y;
+
+//     if (fabs(distToLine) > accuracyEpsilon) {
+//         flip = (distToLine > 0);
+//     }
+//     flip = 0;
+
+//     rx = mPos.x - A.x;
+//     ry = mPos.y - A.y;
+//     d = sqrt(rx * rx + ry * ry);
+//     if (d < EP) return;
+    
+//     a = atan2(ry, rx);
+//     cd = std::clamp(d, fabs(L1 - L2), L1 + L2);
+//     b = acos(std::clamp((L1 * L1 + cd * cd - L2 * L2) / (2.0f * L1 * cd), -1.0f, 1.0f));
+
+//     t = flip ? (a + b) : (a - b);
+//     B.x = A.x + L1 * cos(t);
+//     B.y = A.y + L1 * sin(t);
+    
+//     rx = mPos.x - E.x;
+//     ry = mPos.y - E.y;  
+//     d = sqrt(rx * rx + ry * ry);
+//     if (d < EP) return;
+    
+//     a = atan2(ry, rx);
+//     cd = std::clamp(d, fabs(L3 - L4), L3 + L4);
+//     b = acos(std::clamp((L4 * L4 + cd * cd - L3 * L3) / (2.0f * L4 * cd), -1.0f, 1.0f));
+    
+//     t = flip ? (a - b) : (a + b);
+//     D.x = E.x + L4 * cos(t);
+//     D.y = E.y + L4 * sin(t);
+
+//     C = mPos;
+// }
+
+Vector2 GetBaseAngles() 
+{
+    float angleA = atan2(B.y - A.y, B.x - A.x) * RAD2DEG;
+    float angleE = atan2(D.y - E.y, D.x - E.x) * RAD2DEG;
+    
+    return { angleA, angleE };
+}
+
+void SyncHardware() {
+    if (arduino.isDeviceOpen()) {
+        Vector2 angles = GetBaseAngles();
+        char buffer[128];
+        
+        // 1. Send to Arduino
+        sprintf(buffer, "%.2f,%.2f\n", angles.x, angles.y);
+        arduino.writeString(buffer);
+
+        // 2. Read back from Arduino
+        // We give it a small timeout (e.g., 5ms) to wait for the response
+        char feedback[128];
+        int n = arduino.readString(feedback, '\n', 128, 5);
+        
+        if (n > 0) {
+            printf("HARDWARE FEEDBACK: %s", feedback);
+        }
+    }
+}
 
 void ModelIK(Vector2 mPos)
 {    
@@ -103,22 +194,42 @@ void ModelK()
     {
         step = 0;
         
+        Vector2 lastPos = simState.moveQueue.front().back();
+        simState.accPos.x = (int)lastPos.x;
+        simState.accPos.y = (int)lastPos.y;
         simState.stage = Stage::TraceFinished;
         simState.moveQueue.erase(simState.moveQueue.begin());
         simState.latchQueue.erase(simState.latchQueue.begin());
     }
 }
 
-Vector2 GetBaseAngles() 
-{
-    float angleA = atan2(B.y - A.y, B.x - A.x) * RAD2DEG;
-    float angleE = atan2(D.y - E.y, D.x - E.x) * RAD2DEG;
-    
-    return { angleA, angleE };
-}
-
 void UpdateBar(void)
 {
+    if (!manualControl.active)
+    {
+        manualControl.pos = {C.x, C.y};
+    }
+
+    float speed = 75.0f * GetFrameTime();
+
+    if (IsKeyPressed(KEY_TAB))
+    {
+        manualControl.active = !manualControl.active;
+    }
+
+    if (manualControl.active)
+    {
+        if (IsKeyDown(KEY_W)) manualControl.pos.y += speed;
+        if (IsKeyDown(KEY_S)) manualControl.pos.y -= speed;
+        if (IsKeyDown(KEY_A)) manualControl.pos.x -= speed;
+        if (IsKeyDown(KEY_D)) manualControl.pos.x += speed;
+
+        ModelIK(manualControl.pos);
+        SyncHardware();
+
+        return;
+    }
+
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) &&
         CheckCollisionPointCircle(GetMousePosition(), {C.x, HEIGHT - C.y}, 10)) dragging = true;
     
@@ -130,6 +241,7 @@ void UpdateBar(void)
         mPos.y = HEIGHT - mPos.y;
 
         ModelIK(mPos);
+        SyncHardware();
     }
 
     static float cTick = 0.0f;
@@ -141,6 +253,7 @@ void UpdateBar(void)
         cTick = 0.0f;
 
         ModelK();
+        SyncHardware();
     }
 }
 
@@ -172,12 +285,16 @@ void DrawRange(void)
 
         return (dA <= R1 * R1 && dE <= R2 * R2);
     };
+    float yc = A.y;
+    float r = (R1 > R2) ? R1 : R2;
 
     const int step = 7;
     for (int x = 0; x < WIDTH; x += step)
     {
-        for (int y = A.y; y < HEIGHT; y += step)
+        for (int y = yc - r; y <= yc + r; y += step)
         {
+            if (y < 0 || y >= HEIGHT) continue;
+
             Vector2 p = {(float)x, (float)y};
             if (Valid(p)) DrawPixel(x, HEIGHT - y, GRAY);
         }
@@ -230,4 +347,6 @@ void DrawBar(void)
     for(int t = 0; t < 5; t++) 
         DrawCircleSectorLines(screenE, arcRadius - (t * 0.5f), 0, -angles.y, 16, ARM_PRIMARY);
     DrawTextEx(font, TextFormat("%.1f deg", angles.y), { screenE.x - 25, screenE.y + 20 }, 13, 1, TEXT_COLOR);
+
+    // DrawRange();
 }
