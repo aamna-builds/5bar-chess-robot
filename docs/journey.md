@@ -1,3 +1,5 @@
+<sub>[← Back to README](../README.md) · [Journey](journey.md) · [Hardware](hardware.md) · [Kinematics](kinematics.md)</sub>
+
 # Project journey
 
 The robot was built as the course project for **MEC308 – Mechanics of Machines, Vibrations and Structures** (B.Tech Mechanical Engineering) between January and April 2026. After the final demonstration the whole software stack was rewritten and the geometry re-optimised; that rewrite is v2, the version in this repository.

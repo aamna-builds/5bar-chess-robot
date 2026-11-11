@@ -1,136 +1,233 @@
-# 5-Bar Chess Robot
+<p align="center">
+  <img src="media/banner.svg" alt="5-Bar Chess Robot" width="100%">
+</p>
 
-[![CI](https://github.com/aamna-builds/5bar-chess-robot/actions/workflows/ci.yml/badge.svg)](https://github.com/aamna-builds/5bar-chess-robot/actions/workflows/ci.yml)
-![MATLAB](https://img.shields.io/badge/MATLAB%20%2F%20Octave-toolbox-orange)
-![Python](https://img.shields.io/badge/python-3.10%2B-blue)
-![Arduino](https://img.shields.io/badge/Arduino-Uno-00979D)
-![License: MIT](https://img.shields.io/badge/license-MIT-green)
+<p align="center">
+  <a href="https://github.com/aamna-builds/5bar-chess-robot/actions/workflows/ci.yml"><img src="https://github.com/aamna-builds/5bar-chess-robot/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <img src="https://img.shields.io/badge/MATLAB%20%7C%20Octave-toolbox-e16737?logo=mathworks&logoColor=white" alt="MATLAB">
+  <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white" alt="Python">
+  <img src="https://img.shields.io/badge/Arduino-Uno-00979D?logo=arduino&logoColor=white" alt="Arduino">
+  <img src="https://img.shields.io/badge/license-MIT-22c55e" alt="MIT">
+</p>
 
-A chess robot that moves pieces **without a gripper**. A magnet hidden under an acrylic board is driven by a **2-DOF planar 5-bar parallel linkage**, and each piece has a magnetic base, so it slides along on top.
+<p align="center">
+  <a href="#-demo">Demo</a> ·
+  <a href="#-why-v2">Why v2</a> ·
+  <a href="#-how-it-works">How it works</a> ·
+  <a href="#-quick-start">Quick start</a> ·
+  <a href="docs/journey.md">Journey</a> ·
+  <a href="docs/hardware.md">Hardware</a> ·
+  <a href="docs/kinematics.md">Kinematics</a>
+</p>
 
-| The real robot (v1, April 2026) | The v2 software playing a game in simulation |
-|---|---|
-| ![final demo](media/gifs/final-demo.gif) | ![v2 simulation](media/gifs/v2-simulation.gif) |
+---
 
-## What's in this repository
+A chess robot that moves pieces **without a gripper**. A magnet hidden under an acrylic board is driven by a **two-motor, five-bar parallel linkage**. Every piece has a magnetic base, so it glides across the board on top of the magnet.
 
-The project was built and demonstrated in spring 2026 as the MEC308 (Mechanics of Machines) course project. Since then, the analysis has been taken further and **all of the software has been rewritten from scratch as v2**:
+The robot was built and demonstrated in April 2026. Since then, the analysis has been taken further and all of the software has been **rewritten from scratch as v2**:
 
-- **Analysis:** a [MATLAB toolbox](matlab/) that models the linkage, finds why the first build lost accuracy near the motors, and **optimises a new geometry**. The worst-case singularity margin goes from 0° to 21.8°.
-- **Host software:** a [Python program](host/) with its own chess rules engine and a **collision-free path planner**:
-  - knights and blocked pieces travel along the lanes between squares
-  - captured pieces are parked in side graveyards
-  - castling, en passant and promotion are all handled
-  - an offline simulator shows the whole game
-- **Firmware:** [Arduino firmware](firmware/) that does the inverse kinematics on board, **refuses any move near a singularity**, and drives both steppers along straight lines with a trapezoidal speed profile.
-- **One config file:** [`config/robot.json`](config/robot.json) is shared by all three, and tests check that MATLAB, Python and the firmware agree on every square.
-- **Documentation:** [journey](docs/journey.md), [hardware](docs/hardware.md) and [kinematics](docs/kinematics.md).
+<table>
+<tr>
+<td width="25%" valign="top">
 
-## Why v2
+**📐 MATLAB toolbox**
 
-![v1 vs v2 workspace](matlab/figures/workspace_v1_vs_v2.png)
+Kinematics, singularity maps, layout optimisation, torque analysis and motion planning.
+<br><a href="matlab/">matlab/</a>
 
-The colour shows how far each point is from a singularity:
+</td>
+<td width="25%" valign="top">
 
-- **Left (v1 as built):** the ranks next to the motors (red crosses) sit right on a *type-II* singularity. There, one microstep moves the magnet up to 1.4 mm, the torque needed shoots past even the gearbox rating, and the far corners (red stars) are just out of reach. This matches what testing showed: jerky or unpredictable motion near the motors, lost steps, and lower accuracy at the edges.
-- **Right (v2):** slightly longer links, motors closer together and the board moved back by 57 mm put every square at least 27° away from trouble.
+**♟️ Python host**
 
-| | v1 | v2 |
-|---|---|---|
-| Squares within 20° of a singularity | 10 | **0** |
-| Worst resolution | 1.4 mm / microstep | **0.08 mm** |
-| Peak motor torque (assumed loads) | > 4.4 N·m | **0.5 N·m** |
-| Captures, castling, promotion | by hand | **automatic** |
-| Safety limits in firmware | none | **every move checked** |
+Its own chess rules engine, collision-free path planning, side graveyards and a simulator.
+<br><a href="host/">host/</a>
 
-The full comparison is in [docs/journey.md](docs/journey.md#6-v2-understanding-the-problems-then-fixing-them).
+</td>
+<td width="25%" valign="top">
 
-## Quick start
+**⚙️ Arduino firmware**
 
-**MATLAB** (or GNU Octave):
+On-board inverse kinematics, a safety check on every move, and smooth coordinated stepping.
+<br><a href="firmware/">firmware/</a>
+
+</td>
+<td width="25%" valign="top">
+
+**✅ Tested on every push**
+
+MATLAB, Python and firmware tests in CI, cross-checked against each other.
+<br><a href=".github/workflows/ci.yml">ci.yml</a>
+
+</td>
+</tr>
+</table>
+
+## 🎬 Demo
+
+<table>
+<tr>
+<th width="50%">The real robot (v1, April 2026)</th>
+<th width="50%">v2 software playing a full opening</th>
+</tr>
+<tr>
+<td><img src="media/gifs/final-demo.gif" width="100%" alt="Final demo"></td>
+<td align="center"><img src="media/gifs/v2-simulation.gif" width="88%" alt="v2 simulation"></td>
+</tr>
+<tr>
+<td><sub>Pieces moved by the magnet under the board, with two geared NEMA 17 motors at the bottom.</sub></td>
+<td><sub>The knight takes lanes between squares, captured pieces park at the sides, and castling moves the rook too.</sub></td>
+</tr>
+</table>
+
+<table>
+<tr>
+<th>Magnet flip</th>
+<th>Top-down run</th>
+<th>CAD assembly</th>
+</tr>
+<tr>
+<td><img src="media/gifs/magnet-flip.gif" alt="Magnet flip"></td>
+<td><img src="media/gifs/top-down-run.gif" alt="Top-down run"></td>
+<td><img src="media/gifs/cad-assembly.gif" alt="CAD"></td>
+</tr>
+</table>
+
+## 🔍 Why v2
+
+The first build worked, but it was jumpy near the motors and lost accuracy at the edges of the board. The MATLAB analysis found the cause.
+
+<p align="center">
+  <img src="matlab/figures/workspace_v1_vs_v2.png" width="92%" alt="v1 vs v2 workspace">
+</p>
+
+The colour shows how far each point is from a **singularity**, an arm pose where the linkage loses control.
+
+- **v1:** the ranks next to the motors (✕) sit right on one. There, a single motor step moves the magnet up to 1.4 mm, and the far corners (★) are just out of reach.
+- **v2:** slightly longer arms, motors closer together and the board moved back by 57 mm keep every square at least 27° away.
+
+| | v1 as built | **v2** |
+|---|:---:|:---:|
+| Squares too close to a singularity | 10 / 64 | **0 / 64** |
+| Worst positioning step | 1.4 mm | **0.08 mm** |
+| Peak motor torque (estimated) | over 4.4 N·m | **0.5 N·m** |
+| Captures · castling · promotion | by hand | **automatic** |
+| Firmware safety limits | none | **every move checked** |
+
+<sub>The full before-and-after is in <a href="docs/journey.md#6-v2-understanding-the-problems-then-fixing-them">the project journey</a>.</sub>
+
+## 🧠 How it works
+
+```mermaid
+flowchart LR
+    A["Chess move<br/><code>g8f6</code>"] --> B["Rules engine<br/>legal? capture?<br/>castle? promotion?"]
+    B --> C["Planner<br/>lanes · graveyard<br/>collision + IK check"]
+    C -->|"G x y · M1 · M0"| D["Firmware<br/>IK every 1 mm<br/>safety check · steps"]
+    D --> E["2 × NEMA 17<br/>+ 14:1 gearbox"]
+    E --> F["Magnet under<br/>the board"]
+```
+
+- **Kinematics:** each motor drives a two-link arm, and the two arms meet at the magnet. Going from position to motor angles is the cosine rule applied twice. → [kinematics.md](docs/kinematics.md)
+- **Safety:** the robot watches the angle between the two outer links and the angle at each elbow. Both must stay at least 20° away from 0° and 180°, and the firmware refuses any move that breaks this.
+- **Paths:** a piece moves in a straight line when it clears every other piece. Otherwise it follows the grid lines between squares, which always leave half a square of space.
+
+<p align="center">
+  <img src="matlab/figures/motion_demo.png" width="92%" alt="Motion planning demo">
+</p>
+
+## 🚀 Quick start
+
+<details open>
+<summary><b>MATLAB / Octave</b>: regenerate every figure</summary>
 
 ```matlab
 cd matlab
-run_all        % runs the tests and regenerates every figure and table
+run_all
 ```
+</details>
 
-**Simulate a game**, no hardware needed:
+<details>
+<summary><b>Simulator</b>: play without hardware</summary>
 
 ```bash
 cd host
 pip install -e ".[sim]"
+python -m fivebar_chess play --sim                                       # type moves like e2e4
 python -m fivebar_chess replay --sim examples/special_moves.txt --gif game.gif
-python -m fivebar_chess play --sim            # type moves like e2e4
 ```
+</details>
 
-**Play on the robot:**
+<details>
+<summary><b>Real robot</b></summary>
 
 1. Flash [`firmware/fivebar_chess`](firmware/) from the Arduino IDE.
-2. Put the arms in the home pose and send `Z` (see [calibration](docs/hardware.md#calibration)).
+2. Put both arms in the home pose and send `Z` ([calibration](docs/hardware.md#calibration)).
 3. Then run:
 
 ```bash
-pip install -e ".[robot]"
-python -m fivebar_chess play --port /dev/ttyUSB0                                  # two humans
-python -m fivebar_chess play --port /dev/ttyUSB0 --engine /path/to/stockfish      # vs. engine
+pip install -e "host[robot]"
+python -m fivebar_chess play --port /dev/ttyUSB0                              # two players
+python -m fivebar_chess play --port /dev/ttyUSB0 --engine /path/to/stockfish  # vs. an engine
 ```
 
-A chess engine is optional and runs as a separate program you install yourself. No engine code is part of this repository.
+A chess engine is optional and runs as a separate program you install yourself.
+</details>
 
-## How it works
-
-```
- chess move ──► rules engine ──► planner ──────────────► firmware ─────────────► motors
-  "g8f6"        legal? capture?   lanes, graveyard,       IK every 1 mm,          2 × NEMA 17
-                castle? promo?    collision + IK check    safety check, steps     + 14:1 gearbox
-```
-
-- **Kinematics.** Each motor drives a two-link chain, and the chains meet at the magnet. The inverse kinematics is two applications of the cosine rule. The forward kinematics is the intersection of two circles. The Jacobian comes from the loop-closure constraints. → [docs/kinematics.md](docs/kinematics.md)
-- **Singularities.** The robot watches two angles: the angle between the two distal links (*transmission*) and the angle at each elbow. Both must stay at least 20° away from 0° and 180°.
-- **Paths.** A piece moves in a straight line if it clears every other piece by its own diameter plus 2 mm. Otherwise it follows the grid lines between squares, which always leave half a square of space.
-
-![motion demo](matlab/figures/motion_demo.png)
-
-## Repository layout
+## 📁 Repository layout
 
 ```
-config/      robot.json (v2) and robot_v1.json (as built): the single source of truth
-matlab/      kinematics, workspace and layout optimisation, torque, motion planning, figures/, output/
-host/        Python package fivebar_chess: rules, planner, serial driver, simulator, tests
-firmware/    Arduino sketch and PC unit tests
-tools/       config header generator, build and test scripts
-docs/        journey.md, hardware.md, kinematics.md
-media/       photos, GIFs and videos of the build
+config/     robot.json (v2) · robot_v1.json (as built): one config shared by everything
+matlab/     analysis toolbox, figures/, output/
+host/       Python package: rules, planner, serial driver, simulator, tests
+firmware/   Arduino sketch + PC unit tests
+docs/       journey · hardware · kinematics
+media/      photos, GIFs and videos of the build
+tools/      config generator, build/test scripts, banner
 ```
 
-## Build gallery
+## 🛠️ The build
+
+<table>
+<tr>
+<td width="50%"><img src="media/photos/final-board-top.jpg" alt="Board from above"></td>
+<td width="50%"><img src="media/photos/board-closeup.jpg" alt="Board close-up"></td>
+</tr>
+<tr>
+<td><img src="media/photos/full-setup.jpg" alt="Full setup"></td>
+<td><img src="media/photos/electronics.jpg" alt="Electronics"></td>
+</tr>
+</table>
+
+<p align="center">
+  🎥 <a href="media/videos/final-demo.mp4">Final demo</a> ·
+  <a href="media/videos/top-down-run-1.mp4">Top-down run 1</a> ·
+  <a href="media/videos/top-down-run-2.mp4">Top-down run 2</a> ·
+  <a href="media/videos/magnet-flip.mp4">Magnet flip</a> ·
+  <a href="media/videos/workspace.mp4">Workspace</a> ·
+  <a href="media/videos/cad-assembly.mp4">CAD</a> ·
+  <a href="media/videos/v1-simulator.mp4">v1 simulator</a>
+</p>
+
+The full story, from proposal to torque problems, redesign, demo and v2, is in [**docs/journey.md**](docs/journey.md).
+
+## 📊 Status
 
 | | |
 |---|---|
-| ![board](media/photos/final-board-top.jpg) | ![closeup](media/photos/board-closeup.jpg) |
-| ![setup](media/photos/full-setup.jpg) | ![electronics](media/photos/electronics.jpg) |
-| ![magnet flip](media/gifs/magnet-flip.gif) | ![top-down run](media/gifs/top-down-run.gif) |
+| 🟢 v1 hardware | built and demonstrated, April 2026 |
+| 🟢 MATLAB analysis + v2 geometry | done, tested in CI |
+| 🟢 Host software | done, tested in CI |
+| 🟡 Firmware | compiles for the Uno and passes PC tests; bench testing on the robot is next |
+| ⚪ v2 hardware | needs the new 265 / 315 mm arms and the motors re-spaced to 100 mm |
 
-Videos: [final demo](media/videos/final-demo.mp4) · [top-down run 1](media/videos/top-down-run-1.mp4) · [top-down run 2](media/videos/top-down-run-2.mp4) · [magnet flip](media/videos/magnet-flip.mp4) · [workspace](media/videos/workspace.mp4) · [CAD assembly](media/videos/cad-assembly.mp4) · [v1 simulator](media/videos/v1-simulator.mp4)
+The same software drives the original robot with `--config config/robot_v1.json`.
 
-## Status
+## 🎓 Background
 
-| Part | State |
-|---|---|
-| v1 hardware | built and demonstrated in April 2026 |
-| MATLAB analysis and v2 geometry | done, tested in CI |
-| Host software | done, tested in CI (perft-verified rules, collision-checked planning) |
-| Firmware | compiles for the Uno, unit-tested on a PC. Bench testing on the robot is next |
-| v2 hardware | needs the new link lengths cut (265 / 315 mm) and the motors re-spaced to 100 mm |
+This started as the course project for **MEC308 – Mechanics of Machines, Vibrations and Structures** (B.Tech Mechanical Engineering), under Prof. Ashitava Ghosal. It applies the course material directly: mechanism synthesis, Gruebler's criterion, position and velocity analysis of closed-loop linkages, and torque sizing.
 
-The same software drives the original hardware with `--config config/robot_v1.json`.
+<sub>References: Norton, <i>Design of Machinery</i> · Uicker, Pennock &amp; Shigley, <i>Theory of Machines and Mechanisms</i> · Craig, <i>Introduction to Robotics</i> · Merlet, <i>Parallel Robots</i></sub>
 
-## Background
+---
 
-This started as the course project for **MEC308 – Mechanics of Machines, Vibrations and Structures** (B.Tech Mechanical Engineering), under Prof. Ashitava Ghosal. It applies the course material directly: mechanism synthesis, Gruebler's DOF criterion, position and velocity analysis of closed-loop linkages, and torque estimates.
-
-References: Norton, *Design of Machinery*; Uicker, Pennock & Shigley, *Theory of Machines and Mechanisms*; Craig, *Introduction to Robotics*; Merlet, *Parallel Robots*.
-
-## License
-
-[MIT](LICENSE) © 2026 Aamna Khan
+<p align="center"><sub>MIT License · © 2026 Aamna Khan</sub></p>

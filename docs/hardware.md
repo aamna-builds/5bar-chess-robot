@@ -1,3 +1,5 @@
+<sub>[← Back to README](../README.md) · [Journey](journey.md) · [Hardware](hardware.md) · [Kinematics](kinematics.md)</sub>
+
 # Hardware
 
 ## Mechanism

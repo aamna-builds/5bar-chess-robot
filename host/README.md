@@ -1,3 +1,5 @@
+<sub>[← Back to README](../README.md)</sub>
+
 # Host software (`fivebar_chess`)
 
 The host is pure Python 3.10 or later with no required dependencies:

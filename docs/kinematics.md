@@ -1,3 +1,5 @@
+<sub>[← Back to README](../README.md) · [Journey](journey.md) · [Hardware](hardware.md) · [Kinematics](kinematics.md)</sub>
+
 # Kinematics of the 5-bar linkage
 
 The same equations are implemented three times, and the three versions are tested against each other:
